@@ -71,38 +71,37 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         </button>
                     </div>
 
-                    {/* --- PARTNER LOGOS SECTION --- */}
-                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-12 opacity-60 hover:opacity-100 transition-opacity duration-500">
-                        {/* Xendit */}
+                    {/* --- PARTNER LOGOS SECTION (BALANCED & FULL COLOR) --- */}
+                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-10 md:gap-16 opacity-95 transition-opacity">
+
+                        {/* XENDIT - md:h-10 (Sapat na laki para mabasa) */}
                         <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Xendit_logo.svg/2560px-Xendit_logo.svg.png"
+                            src="https://www.xendit.co/wp-content/uploads/2020/03/XENDIT-LOGOArtboard-1@2x-1024x441.png"
                             alt="Xendit"
-                            className="h-6 md:h-8 grayscale hover:grayscale-0 transition-all cursor-help"
-                            title="Official Payment Gateway"
+                            className="h-8 md:h-10 w-auto object-contain"
                         />
 
-                        {/* GCash */}
+                        {/* GCASH - Binabaan sa md:h-7 para pumantay ang visual weight */}
                         <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/GCash_logo.svg/1200px-GCash_logo.svg.png"
+                            src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg"
                             alt="GCash"
-                            className="h-6 md:h-10 grayscale hover:grayscale-0 transition-all cursor-help"
-                            title="Accepted via GCash"
+                            className="h-6 md:h-7 w-auto object-contain"
                         />
 
-                        {/* Maya */}
+                        {/* MAYA - md:h-12 (Dahil pabilog, kailangan mas mataas ang height para magmukhang pantay) */}
                         <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Maya_logo.svg/1200px-Maya_logo.svg.png"
+                            src="https://business.inquirer.net/wp-content/blogs.dir/5/files/2020/11/PayMaya-Logo_Vertical.png"
                             alt="Maya"
-                            className="h-6 md:h-8 grayscale hover:grayscale-0 transition-all cursor-help"
+                            className="h-10 md:h-12 w-auto object-contain"
                             title="Accepted via Maya"
+                            onError={(e) => { e.target.src = "https://www.maya.ph/hubfs/Maya-logo-02.png" }}
                         />
 
-                        {/* AWS */}
+                        {/* AWS - Binabaan sa md:h-10 para hindi masyadong malaki ang "smile" logo */}
                         <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Amazon_Web_Services_Logo.svg/1024px-Amazon_Web_Services_Logo.svg.png"
+                            src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg"
                             alt="AWS"
-                            className="h-8 md:h-12 grayscale hover:grayscale-0 transition-all cursor-help"
-                            title="Hosted on AWS Infrastructure"
+                            className="h-7 md:h-10 w-auto object-contain"
                         />
                     </div>
                 </div>
