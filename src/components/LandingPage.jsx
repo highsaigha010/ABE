@@ -101,21 +101,39 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
 
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
-                            <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-md">💸</div>
+                            <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
+                                <img
+                                    src="/How_Smart_Escrow/Book & Secure.png"
+                                    alt="Book & Secure"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
                             <h3 className="text-xl font-bold mb-3">Book & Secure</h3>
                             <p className="text-gray-500 text-sm leading-relaxed">
                                 Choose your vendor and pay via GCash or Card. Your money is <strong>locked</strong> in our secure vault.
                             </p>
                         </div>
                         <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
-                            <div className="w-20 h-20 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-md">✅</div>
+                            <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
+                                <img
+                                    src="/How_Smart_Escrow/Vendor Delivers.png"
+                                    alt="Vendor Delivers"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
                             <h3 className="text-xl font-bold mb-3">Vendor Delivers</h3>
                             <p className="text-gray-500 text-sm leading-relaxed">
                                 The vendor sees the funds are secured, so they start working confidently.
                             </p>
                         </div>
                         <div className="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl relative transform md:-translate-y-4 text-center">
-                            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-md">🤝</div>
+                            <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
+                                <img
+                                    src="/How_Smart_Escrow/You Release.png"
+                                    alt="You Release"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
                             <h3 className="text-xl font-bold mb-3">You Release</h3>
                             <p className="text-indigo-100 text-sm leading-relaxed">
                                 Job done? You click <strong>"Release Funds"</strong>. The money is instantly transferred to the vendor.

@@ -167,6 +167,8 @@ export default function App() {
             onPrivacyPolicy={() => setCurrentView('privacy-policy')}
             onTermsOfEscrow={() => setCurrentView('terms-of-escrow')}
             onSupport={() => setCurrentView('support')}
+
+
         />
     );
 }
