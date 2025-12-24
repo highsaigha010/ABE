@@ -71,11 +71,39 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         </button>
                     </div>
 
-                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-10 text-gray-400 grayscale opacity-40">
-                        <span className="font-black text-2xl tracking-tighter italic">Xendit</span>
-                        <span className="font-black text-2xl tracking-tighter italic uppercase">GCash</span>
-                        <span className="font-black text-2xl tracking-tighter italic uppercase">Maya</span>
-                        <span className="font-black text-2xl tracking-tighter italic">AWS</span>
+                    {/* --- PARTNER LOGOS SECTION --- */}
+                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-12 opacity-60 hover:opacity-100 transition-opacity duration-500">
+                        {/* Xendit */}
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Xendit_logo.svg/2560px-Xendit_logo.svg.png"
+                            alt="Xendit"
+                            className="h-6 md:h-8 grayscale hover:grayscale-0 transition-all cursor-help"
+                            title="Official Payment Gateway"
+                        />
+
+                        {/* GCash */}
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/GCash_logo.svg/1200px-GCash_logo.svg.png"
+                            alt="GCash"
+                            className="h-6 md:h-10 grayscale hover:grayscale-0 transition-all cursor-help"
+                            title="Accepted via GCash"
+                        />
+
+                        {/* Maya */}
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Maya_logo.svg/1200px-Maya_logo.svg.png"
+                            alt="Maya"
+                            className="h-6 md:h-8 grayscale hover:grayscale-0 transition-all cursor-help"
+                            title="Accepted via Maya"
+                        />
+
+                        {/* AWS */}
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Amazon_Web_Services_Logo.svg/1024px-Amazon_Web_Services_Logo.svg.png"
+                            alt="AWS"
+                            className="h-8 md:h-12 grayscale hover:grayscale-0 transition-all cursor-help"
+                            title="Hosted on AWS Infrastructure"
+                        />
                     </div>
                 </div>
 
