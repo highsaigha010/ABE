@@ -52,6 +52,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         Book trusted suppliers.<br/>
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Pay with confidence.</span>
                     </h1>
+
                     <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
                         Experience the gold standard in event planning. Our <strong>Smart Escrow™</strong> technology ensures your peace of mind from booking to the final delivery.
                     </p>
@@ -114,8 +115,20 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                             alt="Beautiful Wedding in ABE"
                             className="absolute inset-0 w-full h-full object-cover"
                         />
+                        {/* Floating Text Overlay */}
+                        <div className="absolute top-8 right-8 z-20">
+                            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                                <p className="text-white text-lg md:text-xl font-black tracking-widest italic text-right drop-shadow-2xl">
+                                    "Selebrasyun a masaya,<br/>
+                                    <span className="text-white">king scam malaut ya."</span>
+                                </p>
+                            </div>
+                        </div>
+
                     </div>
+
                 </div>
+
             </div>
 
             {/* --- 3. HOW IT WORKS --- */}
@@ -147,6 +160,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                                     alt="Vendor Delivers"
                                     className="w-full h-full object-contain"
                                 />
+
                             </div>
                             <h3 className="text-xl font-bold mb-3">Vendor Delivers</h3>
                             <p className="text-gray-500 text-sm leading-relaxed">

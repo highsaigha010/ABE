@@ -12,9 +12,40 @@ import TermsForESCROW from "./components/TermsForESCROW";
 import LegalPage from "./components/LegalPage";
 
 export default function App() {
+    useEffect(() => {
+        // 1. I-disable ang Right-Click
+        const handleContextMenu = (e) => {
+            e.preventDefault();
+        };
+
+        // 2. I-disable ang Keyboard Shortcuts para sa Inspect Element
+        const handleKeyDown = (e) => {
+            if (
+                e.keyCode === 123 || // F12
+                (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Ctrl+Shift+I
+                (e.ctrlKey && e.shiftKey && e.keyCode === 74) || // Ctrl+Shift+J
+                (e.ctrlKey && e.keyCode === 85) // Ctrl+U (View Source)
+            ) {
+                e.preventDefault();
+                alert("Abe, Beta Phase pa tayo. Secured muna ang system. 😉");
+            }
+        };
+
+        document.addEventListener('contextmenu', handleContextMenu);
+        document.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup pag-close ng app
+        return () => {
+            document.removeEventListener('contextmenu', handleContextMenu);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
     const [user, setUser] = useState(null);
     const [currentView, setCurrentView] = useState('landing');
     const [selectedVendorId, setSelectedVendorId] = useState(null);
+
+
 
     // --- 1. THE SHARED DATABASE (Mock Data) ---
     // Ito ang "Single Source of Truth". Konektado dito si Client at Vendor.
