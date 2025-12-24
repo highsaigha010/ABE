@@ -173,51 +173,56 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
             </div>
 
             {/* --- 3. HOW IT WORKS --- */}
-            <div className="py-20 bg-white">
-                <div className="max-w-6xl mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-4">How Smart Escrow™ Protects You</h2>
-                        <p className="text-gray-500">We bridged the trust gap between Clients and Vendors.</p>
+            <div className="py-24 bg-gray-950 relative overflow-hidden">
+                {/* Background Decor */}
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] -z-0"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] -z-0"></div>
+
+                <div className="max-w-6xl mx-auto px-6 relative z-10">
+            <div className="flex flex-col items-center mb-20">
+                <div className="w-full max-w-4xl mb-12">
+                    <div className="relative group">
+                        <div className="absolute -inset-4 bg-amber-500/20 rounded-[3rem] blur-2xl group-hover:bg-amber-500/30 transition duration-1000"></div>
+                        <img
+                            src="/Company%20image/abe%20events%20&%20smart%20escrow.png"
+                            alt="Smart Escrow Technology"
+                            className="relative w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(245,158,11,0.3)] transition-transform duration-700 group-hover:scale-105 rounded-[3rem]"
+                        />
+                        {/* Vignetting Overlay */}
+                        <div className="absolute inset-0 pointer-events-none rounded-[3rem] shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] z-10"></div>
                     </div>
+                </div>
+
+                <div className="text-center">
+                    <h3 className="text-amber-500 font-black text-[10px] tracking-[0.4em] uppercase mb-4">The Gold Standard</h3>
+                    <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
+                        How <span className="text-amber-400 italic">Smart Escrow™</span><br/> Protects You
+                    </h2>
+                    <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
+                        We've eliminated the fear of scams. Our proprietary escrow technology acts as a neutral vault, ensuring your money is only released when the job is perfectly done.
+                    </p>
+                </div>
+            </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
-                            <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
-                                <img
-                                    src="/How_Smart_Escrow/Book%20&%20Secure.png"
-                                    alt="Book & Secure"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3">Book & Secure</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">
-                                Choose your vendor and pay via GCash or Card. Your money is <strong>locked</strong> in our secure vault.
+                        <div className="bg-white/5 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white/10 relative group hover:border-amber-500/30 transition-all">
+                            <h3 className="text-xl font-black text-white mb-4 tracking-tight">1. Book & Secure</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                Choose your vendor and pay via GCash or Card. Your money is <span className="text-amber-400 font-bold">locked</span> in our secure gold vault.
                             </p>
                         </div>
-                        <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
-                            <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
-                                <img
-                                    src="/How_Smart_Escrow/Vendor%20Delivers.png"
-                                    alt="Vendor Delivers"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3">Vendor Delivers</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">
-                                The vendor sees the funds are secured, so they start working confidently.
+
+                        <div className="bg-white/5 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white/10 relative group hover:border-amber-500/30 transition-all">
+                            <h3 className="text-xl font-black text-white mb-4 tracking-tight">2. Vendor Delivers</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                The vendor sees the funds are secured, so they start working with <span className="text-amber-400 font-bold">100% confidence</span>.
                             </p>
                         </div>
-                        <div className="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl relative transform md:-translate-y-4 text-center">
-                            <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
-                                <img
-                                    src="/How_Smart_Escrow/You%20Release.png"
-                                    alt="You Release"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <h3 className="text-xl font-bold mb-3">You Release</h3>
-                            <p className="text-indigo-100 text-sm leading-relaxed">
-                                Job done? You click <strong>"Release Funds"</strong>. The money is instantly transferred to the vendor.
+
+                        <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-10 rounded-[2.5rem] shadow-2xl shadow-amber-500/20 relative group overflow-hidden">
+                            <h3 className="text-xl font-black text-white mb-4 tracking-tight relative z-10">3. You Release</h3>
+                            <p className="text-amber-50 text-sm leading-relaxed relative z-10">
+                                Job done? You click <span className="font-black underline">"Release Funds"</span>. The money is instantly transferred to the vendor.
                             </p>
                         </div>
                     </div>
@@ -225,60 +230,16 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
             </div>
 
             {/* --- NEW SECTION: VERIFICATION SHIELD (Strict Vetting) --- */}
-            <div 
-                className="py-12 sm:py-20 bg-indigo-900 text-white overflow-hidden relative"
-                style={{
-                    backgroundImage: 'linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.85)), url("/Company%20image/abe%20events%20&%20smart%20escrow.png")',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundAttachment: 'fixed'
-                }}
-            >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="py-12 sm:py-20 bg-indigo-900 text-white overflow-hidden relative">
                 <div className="max-w-6xl mx-auto px-6 relative z-10">
-                    <div className="flex flex-col lg:flex-row items-center gap-12">
-                        <div className="lg:w-1/2 text-center lg:text-left">
-                            <span className="text-indigo-400 font-black text-[10px] tracking-[0.3em] uppercase mb-4 block">Zero Tolerance for Scams</span>
-                            <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-6 leading-tight">
-                                Hindi lahat ng supplier,<br/> pwedeng maging <span className="text-indigo-400 italic">Abe</span>.
-                            </h2>
-                            <p className="text-indigo-100/70 mb-8 leading-relaxed text-sm sm:text-base">
-                                Bawat supplier sa aming platform ay dumadaan sa <strong>Strict Verification Process</strong>. Sinisiguro namin na legal, rehistrado, at may integridad ang bawat isa sa kanila.
-                            </p>
-                            <div className="space-y-4 max-w-md mx-auto lg:mx-0">
-                                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-                                    <div className="text-2xl text-indigo-400">🛡️</div>
-                                    <div className="text-left">
-                                        <h4 className="font-bold text-sm uppercase">Business Compliance</h4>
-                                        <p className="text-xs text-indigo-200/60 font-medium">Verified DTI, SEC, at Mayor's Business Permits.</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-                                    <div className="text-2xl text-indigo-400">👤</div>
-                                    <div className="text-left">
-                                        <h4 className="font-bold text-sm uppercase">Identity Verification</h4>
-                                        <p className="text-xs text-indigo-200/60 font-medium">1-on-1 KYC (Know Your Client) at Valid Govt IDs.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="lg:w-1/2 relative w-full max-w-sm lg:max-w-none">
-                            <div className="bg-gradient-to-tr from-indigo-500 to-purple-600 p-1 rounded-[2.5rem] shadow-2xl rotate-3">
-                                <div className="bg-indigo-900 rounded-[2.4rem] p-6 sm:p-8 text-center">
-                                    <div className="text-5xl sm:text-6xl mb-4 italic font-black">100%</div>
-                                    <p className="text-indigo-300 font-bold uppercase tracking-widest text-xs">Vetted Professionals</p>
-                                    <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 gap-4">
-                                        <div className="text-center">
-                                            <div className="text-lg font-bold">120+</div>
-                                            <div className="text-[10px] text-indigo-400 uppercase">Registered DTI</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-lg font-bold">Safe</div>
-                                            <div className="text-[10px] text-indigo-400 uppercase">Secured System</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="flex justify-center">
+                        <div className="w-full max-w-4xl relative group">
+                            <div className="absolute -inset-4 bg-indigo-500/20 rounded-[3rem] blur-2xl group-hover:bg-indigo-500/30 transition duration-1000"></div>
+                            <img
+                                src="/Zero%20Tolerance%20for%20Scams/Zero%20Tolerance%20for%20Scams.png"
+                                alt="Zero Tolerance for Scams"
+                                className="relative w-full h-auto object-contain drop-shadow-2xl rounded-[3rem] transition-transform duration-700 group-hover:scale-[1.02]"
+                            />
                         </div>
                     </div>
                 </div>

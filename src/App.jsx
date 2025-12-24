@@ -25,27 +25,6 @@ export default function App() {
         }
     }, []);
 
-    // 3. Right-Click & Inspect Protection
-    useEffect(() => {
-        const handleContextMenu = (e) => e.preventDefault();
-        const handleKeyDown = (e) => {
-            if (
-                e.keyCode === 123 ||
-                (e.ctrlKey && e.shiftKey && e.keyCode === 73) ||
-                (e.ctrlKey && e.shiftKey && e.keyCode === 74) ||
-                (e.ctrlKey && e.keyCode === 85)
-            ) {
-                e.preventDefault();
-                alert("Abe, Beta Phase pa tayo. Secured muna ang system. 😉");
-            }
-        };
-        document.addEventListener('contextmenu', handleContextMenu);
-        document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            document.removeEventListener('contextmenu', handleContextMenu);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, []);
 
     // --- OTHER STATES ---
     const [user, setUser] = useState(null);
@@ -67,9 +46,14 @@ export default function App() {
     ]);
 
     // Function para ma-update ang status (gagamitin ni BookingPage at VendorDashboard)
+    const updateBookingStatus = async (bookingId, action) => {
+        return await callSmartEscrowAPI(bookingId, action);
+    };
+
     // --- SMART ESCROW API SIMULATOR ---
     const callSmartEscrowAPI = async (bookingId, action) => {
-        console.log(`📡 Sending Request to API: [${action}] for Booking #${bookingId}`);
+        const normalizedAction = action.toUpperCase();
+        console.log(`📡 Sending Request to API: [${normalizedAction}] for Booking #${bookingId}`);
 
         // Simulate Network Latency (Kunwari bumibiyahe ang data sa AWS)
         return new Promise((resolve) => {
@@ -79,13 +63,13 @@ export default function App() {
                 if (success) {
                     setBookings(prev => prev.map(b => {
                         if (b.id === bookingId) {
-                            if (action === 'PAY') return { ...b, status: 'paid' };
-                            if (action === 'COMPLETE') return { ...b, status: 'completed' };
-                            if (action === 'RELEASE') return { ...b, status: 'released' };
+                            if (normalizedAction === 'PAY' || normalizedAction === 'PAID') return { ...b, status: 'paid' };
+                            if (normalizedAction === 'COMPLETE') return { ...b, status: 'completed' };
+                            if (normalizedAction === 'RELEASE' || normalizedAction === 'RELEASED') return { ...b, status: 'released' };
                         }
                         return b;
                     }));
-                    resolve({ status: 200, message: "Escrow Updated" });
+                    resolve({ status: 200, message: "Escrow Updated", success: true });
                 }
             }, 1500); // 1.5 seconds delay
         });
@@ -196,8 +180,10 @@ export default function App() {
         return (
             <Dashboard
                 user={user}
+                bookings={bookings}
                 onLogout={handleLogout}
                 onFindSuppliers={() => setCurrentView('vendor-search')}
+                onViewBooking={() => setCurrentView('vendor-profile')}
             />
         );
     }

@@ -56,79 +56,80 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
   // --- SUCCESS VIEW (ESCROW DASHBOARD) ---
   if (isPaid) {
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-6 selection:bg-indigo-100">
-          <div className="bg-white p-12 rounded-[3rem] w-full max-w-lg border border-gray-100 shadow-2xl shadow-indigo-100 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
-            <button onClick={onBack} className="absolute top-8 right-8 w-10 h-10 rounded-xl bg-gray-50 text-gray-400 hover:text-gray-900 flex items-center justify-center transition-colors font-black text-sm">✕</button>
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6 selection:bg-amber-100">
+          <div className="bg-gray-900 p-12 rounded-[3rem] w-full max-w-lg border border-amber-500/10 shadow-2xl shadow-amber-500/5 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-500 to-amber-600"></div>
+            <button onClick={onBack} className="absolute top-8 right-8 w-10 h-10 rounded-xl bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors font-black text-sm border border-white/10">✕</button>
 
             <div className="text-center mb-10">
               {/* DYNAMIC ICON */}
               <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-8 text-5xl shadow-2xl transition-all duration-700 group-hover:scale-110 group-hover:rotate-3
-                    ${isMoneyReleased ? 'bg-indigo-600 text-white shadow-indigo-200' :
-                  isDisputed ? 'bg-red-500 text-white shadow-red-200' : 'bg-green-500 text-white shadow-green-200'}`}>
+                    ${isMoneyReleased ? 'bg-amber-600 text-white shadow-amber-900/40' :
+                  isDisputed ? 'bg-red-500 text-white shadow-red-900/40' : 'bg-amber-500 text-white shadow-amber-900/40'}`}>
 
                 {isMoneyReleased ? '🤝' : (isDisputed ? '⛔' : '🛡️')}
               </div>
 
-              <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">Escrow Status Center</h3>
-              <h2 className="text-4xl font-black text-gray-900 tracking-tighter">
+              <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] mb-2">Escrow Status Center</h3>
+              <h2 className="text-4xl font-black text-white tracking-tighter">
                 {isMoneyReleased ? 'Order Complete' : (isDisputed ? 'Payment Frozen' : 'Payment Secured')}
               </h2>
               <p className="text-gray-400 font-medium mt-3 italic text-sm">
                 {isMoneyReleased ? 'The professional has been paid.' :
-                    (isDisputed ? 'Abe Support is reviewing your case.' : 'Protected by Smart Escrow™')}
+                    (isDisputed ? 'Abe Support is reviewing your case.' : 'Protected by Smart Escrow™ Gold')}
               </p>
             </div>
 
             {/* STATUS BADGE - DYNAMIC COLORS */}
-            <div className={`p-8 rounded-[2rem] mb-10 transition-all border-2
-                ${isMoneyReleased ? 'bg-indigo-50 border-indigo-100' :
-                isDisputed ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
+            <div className={`p-8 rounded-[2rem] mb-10 transition-all border
+                ${isMoneyReleased ? 'bg-amber-500/5 border-amber-500/20' :
+                isDisputed ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/10 border-amber-500/30'}`}>
 
               <div className="flex items-center justify-between mb-4">
                     <span className={`font-black tracking-widest text-[10px] uppercase 
-                        ${isMoneyReleased ? 'text-indigo-600' : (isDisputed ? 'text-red-600' : 'text-amber-600')}`}>
+                        ${isMoneyReleased ? 'text-amber-400' : (isDisputed ? 'text-red-400' : 'text-amber-500')}`}>
                         Live Status
                     </span>
 
                 {isMoneyReleased ? (
-                    <span className="bg-white px-3 py-1 rounded-full text-indigo-600 font-black text-[10px] uppercase tracking-widest border border-indigo-100">Success</span>
+                    <span className="bg-amber-500/10 px-3 py-1 rounded-full text-amber-400 font-black text-[10px] uppercase tracking-widest border border-amber-500/20">Success</span>
                 ) : isDisputed ? (
-                    <span className="bg-white px-3 py-1 rounded-full text-red-600 font-black text-[10px] uppercase tracking-widest border border-red-100 animate-pulse">On Hold</span>
+                    <span className="bg-red-500/10 px-3 py-1 rounded-full text-red-400 font-black text-[10px] uppercase tracking-widest border border-red-500/20 animate-pulse">On Hold</span>
                 ) : isJobDone ? (
-                    <span className="bg-white px-3 py-1 rounded-full text-green-600 font-black text-[10px] uppercase tracking-widest border border-green-100 animate-bounce">Verify Now</span>
+                    <span className="bg-amber-500/20 px-3 py-1 rounded-full text-amber-400 font-black text-[10px] uppercase tracking-widest border border-amber-500/30 animate-bounce">Verify Now</span>
                 ) : (
-                    <span className="bg-white px-3 py-1 rounded-full text-amber-600 font-black text-[10px] uppercase tracking-widest border border-amber-100">Locked</span>
+                    <span className="bg-amber-500/10 px-3 py-1 rounded-full text-amber-400 font-black text-[10px] uppercase tracking-widest border border-amber-500/20">Locked</span>
                 )}
               </div>
 
-              <p className="text-xs text-gray-600 font-bold leading-relaxed">
+              <p className="text-xs text-gray-400 font-bold leading-relaxed">
                 {isMoneyReleased
                     ? "Transaction concluded. Your payment has been successfully transmitted to the vendor's digital wallet."
                     : isDisputed
                         ? "Transaction paused. Funds are frozen in our secure vault until our dispute team verifies the service delivery."
                         : (isJobDone
                             ? "The vendor has submitted their deliverables. Please verify the quality and authorize the final payout."
-                            : "Protected. The vendor cannot access the ₱" + bookingData.price.toLocaleString() + " until you confirm service delivery.")
-                }
+                            : "Protected. The vendor cannot access the ")}
+                {!isMoneyReleased && !isDisputed && !isJobDone && <span className="text-amber-400 font-black">₱{bookingData.price.toLocaleString()}</span>}
+                {!isMoneyReleased && !isDisputed && !isJobDone && " until you confirm service delivery."}
               </p>
             </div>
 
             <div className="space-y-4 text-xs font-black uppercase tracking-widest mb-10">
-              <div className="flex justify-between border-b border-gray-50 pb-4">
-                <span className="text-gray-300">Tracking #</span>
-                <span className="text-gray-900">{bookingData.id.toUpperCase()}</span>
+              <div className="flex justify-between border-b border-white/5 pb-4">
+                <span className="text-gray-500">Tracking #</span>
+                <span className="text-amber-400">{bookingData.id.toUpperCase()}</span>
               </div>
-              <div className="flex justify-between border-b border-gray-50 pb-4">
-                <span className="text-gray-300">Professional</span>
-                <span className="text-indigo-600 italic">{bookingData.vendorName}</span>
+              <div className="flex justify-between border-b border-white/5 pb-4">
+                <span className="text-gray-500">Professional</span>
+                <span className="text-white italic">{bookingData.vendorName}</span>
               </div>
             </div>
 
             {/* BUTTONS AREA */}
             <div className="space-y-4">
               {isMoneyReleased ? (
-                  <button className="w-full bg-gray-900 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-100">
+                  <button className="w-full bg-amber-600 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/20">
                     Download Final Invoice
                   </button>
               ) : (
@@ -138,8 +139,8 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
                         disabled={!isJobDone || isReleasing || isDisputed}
                         className={`w-full py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all
                                 ${(!isJobDone || isDisputed)
-                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                            : 'bg-gray-900 hover:bg-indigo-600 text-white shadow-indigo-200 transform hover:-translate-y-1 active:scale-95'}`}
+                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5'
+                            : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/40 transform hover:-translate-y-1 active:scale-95'}`}
                     >
                       {isReleasing ? 'Transmitting Funds...' : (isJobDone ? 'Authorize Final Payout' : 'Awaiting Deliverables')}
                     </button>
@@ -149,7 +150,7 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
                         <div className="text-center pt-4">
                           <button
                               onClick={handleReportProblem}
-                              className="text-[10px] text-red-400 hover:text-red-600 font-black uppercase tracking-widest transition-colors"
+                              className="text-[10px] text-red-500/70 hover:text-red-500 font-black uppercase tracking-widest transition-colors"
                           >
                             File a Service Dispute
                           </button>
@@ -210,38 +211,39 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
                 </div>
             </div>
           </div>
-
-          <div className="flex flex-col justify-end">
-            <div className="bg-gray-50 p-6 rounded-2xl mb-6 text-xs text-gray-500 border border-gray-100 relative overflow-hidden group">
+          <div className="flex flex-col">
+            <div className="mb-8 flex justify-center bg-gray-950 rounded-[2.5rem] overflow-hidden border border-amber-500/20 shadow-2xl shadow-amber-500/5 h-[340px]">
+                <img
+                    src="/Company%20image/Smart%20ESCROW.png"
+                    alt="Smart Escrow Protection"
+                    className="w-full h-full object-cover rounded-xl"
+                />
+            </div>
+            <div className="bg-gray-950 p-8 rounded-[2rem] mb-6 text-xs text-gray-400 border border-amber-500/20 relative overflow-hidden group shadow-2xl shadow-amber-500/5">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
               <div className="relative z-10">
-                <div className="mb-4">
-                  <img 
-                    src="/Smart_ESCROW.png" 
-                    alt="Smart Escrow Protection" 
-                    className="h-12 w-auto object-contain mb-4"
-                  />
-                </div>
-                <p className="mb-2 font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                    <span className="text-indigo-600">🔒</span> Smart Escrow Protection:
+                <p className="mb-3 font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="text-lg">🛡️</span> Smart Escrow™ Gold Protection
                 </p>
-                <p className="font-medium leading-relaxed">Your payment is held securely in our vault. It is only released to the vendor after the event is completed.</p>
+                <p className="font-medium leading-relaxed text-gray-400">
+                    Your payment is held securely in our <span className="text-amber-400 font-bold">neutral vault</span>. It is only released to the vendor after you confirm the event is successfully completed.
+                </p>
               </div>
-              <div className="absolute -right-4 -bottom-4 text-4xl opacity-5 group-hover:scale-110 transition-transform">🛡️</div>
             </div>
 
             <button
                 onClick={handlePay}
                 disabled={isLoading}
                 className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all 
-                ${isLoading ? 'bg-gray-800 text-white cursor-wait' : 'bg-gray-900 hover:bg-indigo-600 text-white transform hover:-translate-y-1 active:scale-95 shadow-indigo-200'}`}
+                ${isLoading ? 'bg-gray-800 text-white cursor-wait' : 'bg-gray-900 hover:bg-amber-600 text-white transform hover:-translate-y-1 active:scale-95 shadow-amber-900/20'}`}
             >
               {isLoading ? (
                   <span className="flex items-center justify-center gap-3">
-                    <svg className="animate-spin h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Processing...
+                    Securing Funds...
                   </span>
               ) : (user ? `Secure Booking ₱${bookingData.price.toLocaleString()}` : '🔒 Login to Continue')}
             </button>

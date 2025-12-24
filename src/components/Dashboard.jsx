@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
-const Dashboard = ({ user, onLogout, onFindSuppliers }) => {
+const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const activeBooking = bookings && bookings.length > 0 ? bookings[0] : null;
 
     // Mock Categories para mukhang buhay ang app
     const categories = [
@@ -133,22 +134,60 @@ const Dashboard = ({ user, onLogout, onFindSuppliers }) => {
                         </div>
                     </div>
 
-                    <div className="text-center py-12 sm:py-24 border-2 border-dashed border-gray-100 rounded-[2rem] sm:rounded-[2.5rem] bg-gray-50/30 relative">
-                        <div className="w-16 h-16 sm:w-24 h-24 bg-white rounded-full flex items-center justify-center text-3xl sm:text-5xl mx-auto mb-6 sm:mb-8 shadow-xl border border-gray-50 grayscale opacity-40 group-hover:grayscale-0 transition-all">
-                            📅
-                        </div>
-                        <h4 className="text-xl sm:text-2xl font-black text-gray-900 mb-3 tracking-tight">No Active Events</h4>
-                        <p className="text-xs sm:text-sm text-gray-400 font-medium mb-8 sm:mb-10 max-w-xs mx-auto leading-relaxed">
-                            Your itinerary is currently empty. Secure your first professional vendor through our marketplace.
-                        </p>
+                    {activeBooking ? (
+                        <div className="bg-white p-6 sm:p-10 rounded-[2rem] border-2 border-indigo-50 shadow-xl relative overflow-hidden group">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-20 h-20 bg-indigo-600 text-white rounded-3xl flex items-center justify-center text-3xl shadow-lg shadow-indigo-200">
+                                        📸
+                                    </div>
+                                    <div className="text-center md:text-left">
+                                        <h4 className="text-2xl font-black text-gray-900 tracking-tight">{activeBooking.vendorName}</h4>
+                                        <p className="text-indigo-600 font-bold uppercase tracking-widest text-[10px] mt-1">{activeBooking.package}</p>
+                                        <div className="flex items-center gap-4 mt-4 text-gray-400 font-medium text-xs">
+                                            <span>📅 {activeBooking.date}</span>
+                                            <span>•</span>
+                                            <span className="text-gray-900 font-bold">₱{activeBooking.price.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <button
-                            onClick={onFindSuppliers}
-                            className="bg-indigo-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] px-8 sm:px-10 py-4 sm:py-5 rounded-2xl shadow-xl shadow-indigo-200 hover:bg-gray-900 transition-all transform hover:-translate-y-1 active:scale-95"
-                        >
-                            Start Your Search <span>&rarr;</span>
-                        </button>
-                    </div>
+                                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                                    <div className="px-6 py-2.5 rounded-full bg-amber-50 text-amber-600 font-black text-[10px] uppercase tracking-widest border border-amber-100 flex items-center gap-2">
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                        </span>
+                                        {activeBooking.status === 'unpaid' ? 'Awaiting Payment' : 'Payment Secured'}
+                                    </div>
+
+                                    <button
+                                        onClick={onViewBooking}
+                                        className="w-full md:w-auto bg-gray-900 text-white font-black text-[10px] uppercase tracking-[0.2em] px-8 py-4 rounded-2xl shadow-xl hover:bg-indigo-600 transition-all transform hover:-translate-y-1 active:scale-95"
+                                    >
+                                        {activeBooking.status === 'unpaid' ? 'Secure Booking Now' : 'Manage Booking'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 sm:py-24 border-2 border-dashed border-gray-100 rounded-[2rem] sm:rounded-[2.5rem] bg-gray-50/30 relative">
+                            <div className="w-16 h-16 sm:w-24 h-24 bg-white rounded-full flex items-center justify-center text-3xl sm:text-5xl mx-auto mb-6 sm:mb-8 shadow-xl border border-gray-50 grayscale opacity-40 group-hover:grayscale-0 transition-all">
+                                📅
+                            </div>
+                            <h4 className="text-xl sm:text-2xl font-black text-gray-900 mb-3 tracking-tight">No Active Events</h4>
+                            <p className="text-xs sm:text-sm text-gray-400 font-medium mb-8 sm:mb-10 max-w-xs mx-auto leading-relaxed">
+                                Your itinerary is currently empty. Secure your first professional vendor through our marketplace.
+                            </p>
+
+                            <button
+                                onClick={onFindSuppliers}
+                                className="bg-indigo-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] px-8 sm:px-10 py-4 sm:py-5 rounded-2xl shadow-xl shadow-indigo-200 hover:bg-gray-900 transition-all transform hover:-translate-y-1 active:scale-95"
+                            >
+                                Start Your Search <span>&rarr;</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
             </div>
