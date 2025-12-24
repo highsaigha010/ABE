@@ -214,6 +214,76 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                 </div>
             </div>
 
+
+            {/* --- NEW: LIVE ACTIVITY FEED --- */}
+            <div className="py-12 bg-white border-t border-gray-100 overflow-hidden">
+                <div className="max-w-6xl mx-auto px-6">
+                    <div className="flex items-center gap-3 mb-8">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+                        <h3 className="font-bold text-gray-500 uppercase tracking-widest text-xs">Live Platform Activity</h3>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {/* Activity 1 */}
+                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl animate-pulse">
+                            <div className="text-2xl">📸</div>
+                            <div>
+                                <p className="text-sm font-bold text-gray-800">New Booking Secured</p>
+                                <p className="text-xs text-gray-400">Wedding Shoot • ₱50,000 locked</p>
+                            </div>
+                            <span className="ml-auto text-[10px] text-gray-300 font-bold uppercase">2m ago</span>
+                        </div>
+
+                        {/* Activity 2 */}
+                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                            <div className="text-2xl">💸</div>
+                            <div>
+                                <p className="text-sm font-bold text-gray-800">Payout Released</p>
+                                <p className="text-xs text-gray-400">To Photographer via GCash</p>
+                            </div>
+                            <span className="ml-auto text-[10px] text-gray-300 font-bold uppercase">15m ago</span>
+                        </div>
+
+                        {/* Activity 3 */}
+                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
+                            <div className="text-2xl">🛡️</div>
+                            <div>
+                                <p className="text-sm font-bold text-gray-800">Vendor Verified</p>
+                                <p className="text-xs text-gray-400">Hair & Makeup Artist joined</p>
+                            </div>
+                            <span className="ml-auto text-[10px] text-gray-300 font-bold uppercase">1h ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- NEW: BETA COUNTDOWN BANNER --- */}
+            <div className="bg-indigo-900 py-16 px-6 text-center">
+                <div className="max-w-3xl mx-auto">
+                    <h2 className="text-3xl font-bold text-white mb-4">Limited Slots for Beta Testing</h2>
+                    <p className="text-indigo-200 mb-8">We are only accepting 15 pioneer photographers for this phase. Join the revolution of secure bookings today.</p>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-indigo-800 rounded-full h-4 mb-4 border border-indigo-700">
+                        <div className="bg-green-400 h-full rounded-full shadow-lg shadow-green-400/20" style={{ width: '60%' }}></div>
+                    </div>
+                    <div className="flex justify-between text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                        <span>9 Slots Registered</span>
+                        <span>6 Slots Left</span>
+                    </div>
+
+                    <button
+                        onClick={onVendorSignup}
+                        className="mt-10 bg-white text-indigo-900 font-black px-10 py-4 rounded-full hover:bg-indigo-50 transition-all shadow-2xl"
+                    >
+                        RESERVE MY VENDOR SLOT
+                    </button>
+                </div>
+            </div>
+
             {/* --- 5. FOOTER --- */}
             <footer className="bg-white border-t border-gray-200 py-12">
                 <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
