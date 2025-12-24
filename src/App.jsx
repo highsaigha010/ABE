@@ -67,10 +67,28 @@ export default function App() {
     ]);
 
     // Function para ma-update ang status (gagamitin ni BookingPage at VendorDashboard)
-    const updateBookingStatus = (id, newStatus) => {
-        setBookings(prev => prev.map(b =>
-            b.id === id ? { ...b, status: newStatus } : b
-        ));
+    // --- SMART ESCROW API SIMULATOR ---
+    const callSmartEscrowAPI = async (bookingId, action) => {
+        console.log(`📡 Sending Request to API: [${action}] for Booking #${bookingId}`);
+
+        // Simulate Network Latency (Kunwari bumibiyahe ang data sa AWS)
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const success = true; // Dito mo pwedeng i-test yung error handling mamaya
+
+                if (success) {
+                    setBookings(prev => prev.map(b => {
+                        if (b.id === bookingId) {
+                            if (action === 'PAY') return { ...b, status: 'paid' };
+                            if (action === 'COMPLETE') return { ...b, status: 'completed' };
+                            if (action === 'RELEASE') return { ...b, status: 'released' };
+                        }
+                        return b;
+                    }));
+                    resolve({ status: 200, message: "Escrow Updated" });
+                }
+            }, 1500); // 1.5 seconds delay
+        });
     };
 
     // --- AUTH LOGIC ---

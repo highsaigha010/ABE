@@ -47,9 +47,23 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
     }, 2500);
   };
 
-  const handleMarkComplete = () => {
-    if (confirm("Are you sure the event is done? This will notify the client to release funds.")) {
-      onUpdateStatus(currentJob.id, 'completed');
+  // Baguhin natin ito para maging specific sa Escrow API call
+  const handleMarkComplete = async () => {
+    if (confirm("Confirm event delivery? This notifies the client to release funds.")) {
+      setIsProcessing(true); // Eto yung bubuhay sa spinner sa baba (the Authorization button)
+
+      try {
+        // TAWAG NA SA API SIMULATOR NATIN SA APP.JSX
+        const response = await onUpdateStatus(currentJob.id, 'COMPLETE');
+
+        if (response.success) {
+          alert("✅ SUCCESS: Event marked as Completed. Notification sent to Client!");
+        }
+      } catch (error) {
+        alert("❌ ERROR: Smart Escrow server is busy. Please try again.");
+      } finally {
+        setIsProcessing(false); // Patay na ang spinner
+      }
     }
   };
 
