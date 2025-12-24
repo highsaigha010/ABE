@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onPrivacyPolicy, onTermsOfEscrow, onSupport }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
     return (
         <div className="min-h-screen font-sans text-gray-900">
 
@@ -13,14 +15,15 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-8">
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex items-center gap-8">
                         <button
                             onClick={onVendorSignup}
-                            className="hidden md:block text-gray-400 hover:text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
+                            className="text-gray-400 hover:text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] transition-colors"
                         >
                             Become a Vendor
                         </button>
-                        <div className="h-4 w-px bg-gray-100 hidden md:block"></div>
+                        <div className="h-4 w-px bg-gray-100"></div>
                         <button
                             onClick={onLogin}
                             className="text-gray-900 font-black text-[10px] uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
@@ -34,7 +37,45 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                             Sign Up Free
                         </button>
                     </div>
+
+                    {/* Mobile Menu Toggle */}
+                    <button 
+                        className="md:hidden p-2 text-gray-900 focus:outline-none"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {isMenuOpen ? (
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            ) : (
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                            )}
+                        </svg>
+                    </button>
                 </div>
+
+                {/* Mobile Menu Overlay */}
+                {isMenuOpen && (
+                    <div className="md:hidden bg-white border-b border-gray-100 absolute top-20 left-0 w-full p-6 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
+                        <button
+                            onClick={() => { onVendorSignup(); setIsMenuOpen(false); }}
+                            className="block w-full text-left text-gray-900 font-black text-xs uppercase tracking-[0.2em] py-3 border-b border-gray-50"
+                        >
+                            Become a Vendor
+                        </button>
+                        <button
+                            onClick={() => { onLogin(); setIsMenuOpen(false); }}
+                            className="block w-full text-left text-gray-900 font-black text-xs uppercase tracking-[0.2em] py-3 border-b border-gray-50"
+                        >
+                            Log In
+                        </button>
+                        <button
+                            onClick={() => { onRegister(); setIsMenuOpen(false); }}
+                            className="w-full bg-gray-900 hover:bg-indigo-600 text-white px-6 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl transition-all"
+                        >
+                            Sign Up Free
+                        </button>
+                    </div>
+                )}
             </nav>
 
             {/* --- 2. HERO SECTION --- */}
@@ -48,32 +89,32 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         </span>
                         ABE'S FIRST SECURE EVENT PLATFORM
                     </span>
-                    <h1 className="text-6xl md:text-7xl font-black tracking-tighter mb-8 text-gray-900 leading-[0.9] md:leading-[1.1]">
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tighter mb-8 text-gray-900 leading-[0.9] md:leading-[1.1]">
                         Book trusted suppliers.<br/>
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Pay with confidence.</span>
                     </h1>
 
-                    <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+                    <p className="text-lg md:text-xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
                         Experience the gold standard in event planning. Our <strong>Smart Escrow™</strong> technology ensures your peace of mind from booking to the final delivery.
                     </p>
 
-                    <div className="flex flex-col md:flex-row justify-center gap-6">
+                    <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
                         <button
                             onClick={onFindSuppliers}
-                            className="bg-gray-900 text-white text-sm uppercase tracking-widest font-black px-10 py-5 rounded-2xl shadow-2xl hover:bg-indigo-600 transition-all transform hover:-translate-y-1 active:scale-95"
+                            className="bg-gray-900 text-white text-xs sm:text-sm uppercase tracking-widest font-black px-6 sm:px-10 py-4 sm:py-5 rounded-2xl shadow-2xl hover:bg-indigo-600 transition-all transform hover:-translate-y-1 active:scale-95"
                         >
                             Explore Marketplace
                         </button>
                         <button
                             onClick={onVendorSignup}
-                            className="bg-white text-gray-900 border-2 border-gray-100 text-sm uppercase tracking-widest font-black px-10 py-5 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50 transition-all transform hover:-translate-y-1 active:scale-95"
+                            className="bg-white text-gray-900 border-2 border-gray-100 text-xs sm:text-sm uppercase tracking-widest font-black px-6 sm:px-10 py-4 sm:py-5 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50 transition-all transform hover:-translate-y-1 active:scale-95"
                         >
                             Join as a Supplier
                         </button>
                     </div>
 
                     {/* --- PARTNER LOGOS SECTION (BALANCED & FULL COLOR) --- */}
-                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-10 md:gap-16 opacity-95 transition-opacity">
+                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-6 sm:gap-10 md:gap-16 opacity-95 transition-opacity">
 
                         {/* XENDIT - md:h-10 (Sapat na laki para mabasa) */}
                         <img
@@ -108,17 +149,17 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                 </div>
 
                 <div className="mt-20 max-w-6xl mx-auto relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[2.5rem] blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative w-full h-[450px] md:h-[650px] rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white bg-gray-100">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[1.5rem] sm:rounded-[2.5rem] blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative w-full h-[300px] sm:h-[450px] md:h-[650px] rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl border-4 sm:border-8 border-white bg-gray-100">
                         <img
                             src="/landing_page_image/Events2.png"
                             alt="Beautiful Wedding in ABE"
                             className="absolute inset-0 w-full h-full object-cover"
                         />
                         {/* Floating Text Overlay */}
-                        <div className="absolute top-8 right-8 z-20">
-                            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                                <p className="text-white text-lg md:text-xl font-black tracking-widest italic text-right drop-shadow-2xl">
+                        <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-20">
+                            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                                <p className="text-white text-sm sm:text-lg md:text-xl font-black tracking-widest italic text-right drop-shadow-2xl">
                                     "Selebrasyun a masaya,<br/>
                                     king scam malaut ya."
                                 </p>
@@ -139,7 +180,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         <p className="text-gray-500">We bridged the trust gap between Clients and Vendors.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
                             <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
                                 <img
@@ -185,7 +226,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
 
             {/* --- NEW SECTION: VERIFICATION SHIELD (Strict Vetting) --- */}
             <div 
-                className="py-20 bg-indigo-900 text-white overflow-hidden relative"
+                className="py-12 sm:py-20 bg-indigo-900 text-white overflow-hidden relative"
                 style={{
                     backgroundImage: 'linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.85)), url("/Company%20image/abe%20events%20&%20smart%20escrow.png")',
                     backgroundSize: 'cover',
@@ -195,36 +236,36 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
             >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
                 <div className="max-w-6xl mx-auto px-6 relative z-10">
-                    <div className="flex flex-col md:flex-row items-center gap-12">
-                        <div className="md:w-1/2">
+                    <div className="flex flex-col lg:flex-row items-center gap-12">
+                        <div className="lg:w-1/2 text-center lg:text-left">
                             <span className="text-indigo-400 font-black text-[10px] tracking-[0.3em] uppercase mb-4 block">Zero Tolerance for Scams</span>
-                            <h2 className="text-4xl font-black tracking-tighter mb-6 leading-tight">
+                            <h2 className="text-3xl sm:text-4xl font-black tracking-tighter mb-6 leading-tight">
                                 Hindi lahat ng supplier,<br/> pwedeng maging <span className="text-indigo-400 italic">Abe</span>.
                             </h2>
-                            <p className="text-indigo-100/70 mb-8 leading-relaxed">
+                            <p className="text-indigo-100/70 mb-8 leading-relaxed text-sm sm:text-base">
                                 Bawat supplier sa aming platform ay dumadaan sa <strong>Strict Verification Process</strong>. Sinisiguro namin na legal, rehistrado, at may integridad ang bawat isa sa kanila.
                             </p>
-                            <div className="space-y-4">
+                            <div className="space-y-4 max-w-md mx-auto lg:mx-0">
                                 <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
                                     <div className="text-2xl text-indigo-400">🛡️</div>
-                                    <div>
+                                    <div className="text-left">
                                         <h4 className="font-bold text-sm uppercase">Business Compliance</h4>
                                         <p className="text-xs text-indigo-200/60 font-medium">Verified DTI, SEC, at Mayor's Business Permits.</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
                                     <div className="text-2xl text-indigo-400">👤</div>
-                                    <div>
+                                    <div className="text-left">
                                         <h4 className="font-bold text-sm uppercase">Identity Verification</h4>
                                         <p className="text-xs text-indigo-200/60 font-medium">1-on-1 KYC (Know Your Client) at Valid Govt IDs.</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="md:w-1/2 relative">
+                        <div className="lg:w-1/2 relative w-full max-w-sm lg:max-w-none">
                             <div className="bg-gradient-to-tr from-indigo-500 to-purple-600 p-1 rounded-[2.5rem] shadow-2xl rotate-3">
-                                <div className="bg-indigo-900 rounded-[2.4rem] p-8 text-center">
-                                    <div className="text-6xl mb-4 italic font-black">100%</div>
+                                <div className="bg-indigo-900 rounded-[2.4rem] p-6 sm:p-8 text-center">
+                                    <div className="text-5xl sm:text-6xl mb-4 italic font-black">100%</div>
                                     <p className="text-indigo-300 font-bold uppercase tracking-widest text-xs">Vetted Professionals</p>
                                     <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 gap-4">
                                         <div className="text-center">

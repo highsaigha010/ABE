@@ -42,7 +42,7 @@ export default function VendorSearchPage({ onViewProfile }) {
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-indigo-100">
             {/* 1. HERO BANNER WITH SEARCH BAR */}
-            <section className="relative h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
+            <section className="relative h-[450px] sm:h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
                     <img 
                         src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=2000&q=80" 
@@ -53,25 +53,25 @@ export default function VendorSearchPage({ onViewProfile }) {
                 </div>
                 
                 <div className="relative z-10 max-w-5xl mx-auto text-center px-4">
-                    <span className="inline-block px-4 py-1.5 bg-indigo-600/20 backdrop-blur-md rounded-full text-xs font-black text-indigo-300 uppercase tracking-[0.3em] mb-8 border border-indigo-500/30">
+                    <span className="inline-block px-4 py-1.5 bg-indigo-600/20 backdrop-blur-md rounded-full text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.3em] mb-6 sm:mb-8 border border-indigo-500/30">
                         ABE's Elite Marketplace
                     </span>
-                    <h1 className="text-4xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-tight">
+                    <h1 className="text-3xl sm:text-4xl md:text-7xl font-black text-white mb-6 sm:mb-8 tracking-tighter leading-tight">
                         Find Your Perfect <br/><span className="text-indigo-400">Event Team</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-gray-200 mb-12 max-w-2xl mx-auto font-medium">
+                    <p className="text-sm sm:text-lg md:text-xl text-gray-200 mb-8 sm:mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
                         Discover and book verified photography, catering, and venue professionals in Angeles, Clark, and San Fernando.
                     </p>
 
                     {/* Search Bar Card */}
-                    <div className="bg-white/10 backdrop-blur-2xl p-2 rounded-3xl md:rounded-[2.5rem] shadow-2xl border border-white/20 max-w-4xl mx-auto">
-                        <div className="bg-white p-6 md:p-8 rounded-2xl md:rounded-[2rem] shadow-inner flex flex-col md:flex-row gap-4 md:gap-6">
+                    <div className="bg-white/10 backdrop-blur-2xl p-2 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-white/20 max-w-4xl mx-auto">
+                        <div className="bg-white p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-inner flex flex-col md:flex-row gap-4 sm:gap-6">
                             <div className="flex-1">
-                                <label className="block text-left text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Preferred City</label>
+                                <label className="block text-left text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 sm:mb-3 ml-1">Preferred City</label>
                                 <select 
                                     value={city}
                                     onChange={(e) => setCity(e.target.value)}
-                                    className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 focus:border-indigo-500 focus:ring-0 outline-none bg-gray-50 font-bold transition-all appearance-none"
+                                    className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-50 focus:border-indigo-500 focus:ring-0 outline-none bg-gray-50 font-bold transition-all appearance-none text-sm sm:text-base"
                                 >
                                     <option value="ANGELES">Angeles City</option>
                                     <option value="SAN_FERNANDO">San Fernando</option>
@@ -80,11 +80,11 @@ export default function VendorSearchPage({ onViewProfile }) {
                                 </select>
                             </div>
                             <div className="flex-1">
-                                <label className="block text-left text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Service Category</label>
+                                <label className="block text-left text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 sm:mb-3 ml-1">Service Category</label>
                                 <select 
                                     value={category}
                                     onChange={(e) => setCategory(e.target.value)}
-                                    className="w-full px-6 py-4 rounded-2xl border-2 border-gray-50 focus:border-indigo-500 focus:ring-0 outline-none bg-gray-50 font-bold transition-all appearance-none"
+                                    className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-50 focus:border-indigo-500 focus:ring-0 outline-none bg-gray-50 font-bold transition-all appearance-none text-sm sm:text-base"
                                 >
                                     <option value="PHOTO">Photography</option>
                                     <option value="VIDEO">Video Production</option>
@@ -97,7 +97,7 @@ export default function VendorSearchPage({ onViewProfile }) {
                                 <button 
                                     onClick={handleSearch}
                                     disabled={loading}
-                                    className="w-full md:w-auto px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-gray-900 transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3"
+                                    className="w-full md:w-auto px-8 sm:px-12 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm uppercase tracking-widest hover:bg-gray-900 transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3"
                                 >
                                     {loading ? (
                                         <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
