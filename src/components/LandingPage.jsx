@@ -144,7 +144,15 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
             </div>
 
             {/* --- NEW SECTION: VERIFICATION SHIELD (Strict Vetting) --- */}
-            <div className="py-20 bg-indigo-900 text-white overflow-hidden relative">
+            <div 
+                className="py-20 bg-indigo-900 text-white overflow-hidden relative"
+                style={{
+                    backgroundImage: 'linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.85)), url("/Company image/abe events & smart escrow.png")',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed'
+                }}
+            >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
                 <div className="max-w-6xl mx-auto px-6 relative z-10">
                     <div className="flex flex-col md:flex-row items-center gap-12">
