@@ -120,7 +120,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                             <div className="bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
                                 <p className="text-white text-lg md:text-xl font-black tracking-widest italic text-right drop-shadow-2xl">
                                     "Selebrasyun a masaya,<br/>
-                                    <span className="text-white">king scam malaut ya."</span>
+                                    king scam malaut ya."
                                 </p>
                             </div>
                         </div>
@@ -143,7 +143,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
                             <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
                                 <img
-                                    src="/How_Smart_Escrow/Book & Secure.png"
+                                    src="/How_Smart_Escrow/Book%20&%20Secure.png"
                                     alt="Book & Secure"
                                     className="w-full h-full object-contain"
                                 />
@@ -156,11 +156,10 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 relative text-center">
                             <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
                                 <img
-                                    src="/How_Smart_Escrow/Vendor Delivers.png"
+                                    src="/How_Smart_Escrow/Vendor%20Delivers.png"
                                     alt="Vendor Delivers"
                                     className="w-full h-full object-contain"
                                 />
-
                             </div>
                             <h3 className="text-xl font-bold mb-3">Vendor Delivers</h3>
                             <p className="text-gray-500 text-sm leading-relaxed">
@@ -170,7 +169,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         <div className="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl relative transform md:-translate-y-4 text-center">
                             <div className="w-24 h-24 mx-auto mb-6 overflow-hidden">
                                 <img
-                                    src="/How_Smart_Escrow/You Release.png"
+                                    src="/How_Smart_Escrow/You%20Release.png"
                                     alt="You Release"
                                     className="w-full h-full object-contain"
                                 />
@@ -188,7 +187,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
             <div 
                 className="py-20 bg-indigo-900 text-white overflow-hidden relative"
                 style={{
-                    backgroundImage: 'linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.85)), url("/Company image/abe events & smart escrow.png")',
+                    backgroundImage: 'linear-gradient(rgba(30, 27, 75, 0.85), rgba(30, 27, 75, 0.85)), url("/Company%20image/abe%20events%20&%20smart%20escrow.png")',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'fixed'

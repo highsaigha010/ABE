@@ -12,40 +12,45 @@ import TermsForESCROW from "./components/TermsForESCROW";
 import LegalPage from "./components/LegalPage";
 
 export default function App() {
-    useEffect(() => {
-        // 1. I-disable ang Right-Click
-        const handleContextMenu = (e) => {
-            e.preventDefault();
-        };
+    // --- 1. SECURITY & ACCESS STATES (Dapat nandito 'to) ---
+    const [hasAccess, setHasAccess] = useState(false);
+    const [accessCode, setAccessCode] = useState('');
+    const CORRECT_CODE = "ABE2025";
 
-        // 2. I-disable ang Keyboard Shortcuts para sa Inspect Element
+    // 2. I-check kung naka-login na sa Access Gate dati
+    useEffect(() => {
+        const savedAccess = localStorage.getItem('abe_beta_access');
+        if (savedAccess === 'true') {
+            setHasAccess(true);
+        }
+    }, []);
+
+    // 3. Right-Click & Inspect Protection
+    useEffect(() => {
+        const handleContextMenu = (e) => e.preventDefault();
         const handleKeyDown = (e) => {
             if (
-                e.keyCode === 123 || // F12
-                (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Ctrl+Shift+I
-                (e.ctrlKey && e.shiftKey && e.keyCode === 74) || // Ctrl+Shift+J
-                (e.ctrlKey && e.keyCode === 85) // Ctrl+U (View Source)
+                e.keyCode === 123 ||
+                (e.ctrlKey && e.shiftKey && e.keyCode === 73) ||
+                (e.ctrlKey && e.shiftKey && e.keyCode === 74) ||
+                (e.ctrlKey && e.keyCode === 85)
             ) {
                 e.preventDefault();
                 alert("Abe, Beta Phase pa tayo. Secured muna ang system. 😉");
             }
         };
-
         document.addEventListener('contextmenu', handleContextMenu);
         document.addEventListener('keydown', handleKeyDown);
-
-        // Cleanup pag-close ng app
         return () => {
             document.removeEventListener('contextmenu', handleContextMenu);
             document.removeEventListener('keydown', handleKeyDown);
         };
     }, []);
 
+    // --- OTHER STATES ---
     const [user, setUser] = useState(null);
     const [currentView, setCurrentView] = useState('landing');
     const [selectedVendorId, setSelectedVendorId] = useState(null);
-
-
 
     // --- 1. THE SHARED DATABASE (Mock Data) ---
     // Ito ang "Single Source of Truth". Konektado dito si Client at Vendor.
@@ -74,6 +79,16 @@ export default function App() {
         if (storedUser) setUser(JSON.parse(storedUser));
     }, []);
 
+    const handleAccessSubmit = (e) => {
+        e.preventDefault();
+        if (accessCode.toUpperCase() === CORRECT_CODE) {
+            setHasAccess(true);
+            localStorage.setItem('abe_beta_access', 'true');
+        } else {
+            alert("Maling code, Abe! Kontakin mo muna kami para sa access.");
+        }
+    };
+
     const handleLogout = () => {
         setUser(null);
         localStorage.removeItem('photo_user');
@@ -87,6 +102,36 @@ export default function App() {
         localStorage.setItem('photo_user', JSON.stringify(userWithRole));
         setCurrentView('dashboard');
     };
+
+    // --- ACCESS GATE UI ---
+    if (!hasAccess) {
+        return (
+            <div className="min-h-screen bg-indigo-900 flex items-center justify-center p-6 text-white font-sans">
+                <div className="max-w-md w-full text-center">
+                    <img src="/Company%20image/ABE%20EVENTS.png" alt="AbeEvents" className="h-24 mx-auto mb-8 rounded-full shadow-2xl" />
+                    <h1 className="text-3xl font-black mb-4 uppercase tracking-tighter">BETA ACCESS ONLY</h1>
+                    <p className="text-indigo-200 mb-8 leading-relaxed">
+                        Abe! Ang platform na ito ay kasalukuyang nasa **Private Beta Phase**. Mangyaring ilagay ang iyong access code para makapasok.
+                    </p>
+                    <form onSubmit={handleAccessSubmit} className="space-y-4">
+                        <input
+                            type="text"
+                            placeholder="Enter Access Code"
+                            value={accessCode}
+                            onChange={(e) => setAccessCode(e.target.value)}
+                            className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-6 text-center text-xl font-bold tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        />
+                        <button className="w-full bg-white text-indigo-900 font-black py-4 rounded-2xl hover:bg-indigo-50 transition-all uppercase tracking-widest">
+                            Unlock Access
+                        </button>
+                    </form>
+                    <p className="mt-8 text-xs text-indigo-400 uppercase tracking-widest font-bold">
+                        Gawang Kapampangan. Secured by Smart Escrow™
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     // --- RENDER LOGIC ---
 
@@ -169,6 +214,7 @@ export default function App() {
                             bookingData={bookings[0]}
                             onUpdateStatus={updateBookingStatus}
                             onRedirectToLogin={() => setCurrentView('login')}
+                            onBack={() => setCurrentView('landing')}
                         />
                     )}
                     {currentView === 'privacy-policy' && <LegalPage />}
