@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { generateInvoice } from '../utils/invoiceGenerator';
 
 const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -158,8 +159,18 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking })
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                                         </span>
-                                        {activeBooking.status === 'unpaid' ? 'Awaiting Payment' : 'Payment Secured'}
+                                        {activeBooking.status === 'unpaid' ? 'Awaiting Payment' : 
+                                         activeBooking.status === 'released' ? 'Order Complete' : 'Payment Secured'}
                                     </div>
+
+                                    {activeBooking.status === 'released' && (
+                                        <button
+                                            onClick={() => generateInvoice(activeBooking)}
+                                            className="w-full md:w-auto bg-amber-600 text-white font-black text-[10px] uppercase tracking-[0.2em] px-8 py-4 rounded-2xl shadow-xl hover:bg-amber-500 transition-all transform hover:-translate-y-1 active:scale-95"
+                                        >
+                                            Download Receipt
+                                        </button>
+                                    )}
 
                                     <button
                                         onClick={onViewBooking}

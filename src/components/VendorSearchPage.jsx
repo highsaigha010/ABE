@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function VendorSearchPage({ onViewProfile }) {
+export default function VendorSearchPage({ onViewProfile, users = [] }) {
     const [city, setCity] = useState('ANGELES');
     const [category, setCategory] = useState('PHOTO');
     const [vendors, setVendors] = useState([]);
@@ -22,8 +22,16 @@ export default function VendorSearchPage({ onViewProfile }) {
             const data = await response.json();
 
             if (response.ok) {
-                // The backend returns a list of vendors directly
-                setVendors(data || []);
+                // Merge with local security state (strikes/banned)
+                const enhancedVendors = (data || []).map(v => {
+                    const localUser = users.find(u => u.name === v.businessName);
+                    return {
+                        ...v,
+                        strikes: localUser?.strikes || 0,
+                        isBanned: localUser?.isBanned || false
+                    };
+                });
+                setVendors(enhancedVendors);
             } else {
                 setError(data.error || "Failed to fetch vendors. Please try again.");
             }
@@ -186,7 +194,19 @@ export default function VendorSearchPage({ onViewProfile }) {
                                             <h3 className="text-2xl font-black text-gray-900 group-hover:text-indigo-600 transition tracking-tight">
                                                 {vendor.businessName}
                                             </h3>
-                                            <div className="text-blue-500 text-sm font-black bg-blue-50 w-6 h-6 rounded-full flex items-center justify-center border border-blue-100 shadow-sm" title="Verified">✓</div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <div className="text-blue-500 text-sm font-black bg-blue-50 w-6 h-6 rounded-full flex items-center justify-center border border-blue-100 shadow-sm" title="Verified">✓</div>
+                                                {/* Reputation Badge */}
+                                                <span className={`text-[8px] font-black uppercase tracking-tighter px-2 py-0.5 rounded ${
+                                                    vendor.isBanned 
+                                                        ? 'bg-black text-white' 
+                                                        : (vendor.strikes > 0 ? 'bg-red-100 text-red-600 animate-pulse' : (vendor.basePrice > 20000 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'))
+                                                }`}>
+                                                    {vendor.isBanned 
+                                                        ? '🚫 Banned' 
+                                                        : (vendor.strikes > 0 ? '⚠️ Under Review' : (vendor.basePrice > 20000 ? '⭐ Top Rated' : 'Verified'))}
+                                                </span>
+                                            </div>
                                         </div>
                                         <p className="text-gray-400 font-bold text-xs mb-8 uppercase tracking-widest flex items-center gap-2">
                                             <span className="text-indigo-600">📍</span> {vendor.gsi1pk?.replace('LOCATION#', '').replace('_', ' ') || 'Pampanga'}

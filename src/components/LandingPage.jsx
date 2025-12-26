@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 
-const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onPrivacyPolicy, onTermsOfEscrow, onSupport }) => {
+// DAGDAG: Isinama natin si 'onAdminAccess' sa props list sa ibaba
+const LandingPage = ({
+                         onLogin,
+                         onRegister,
+                         onVendorSignup,
+                         onFindSuppliers,
+                         onPrivacyPolicy,
+                         onTermsOfEscrow,
+                         onSupport,
+                         onAdminAccess // <--- Eto yung nawawala kaya nag-white screen!
+                     }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
@@ -39,7 +49,7 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                     </div>
 
                     {/* Mobile Menu Toggle */}
-                    <button 
+                    <button
                         className="md:hidden p-2 text-gray-900 focus:outline-none"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                     >
@@ -113,33 +123,23 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                         </button>
                     </div>
 
-                    {/* --- PARTNER LOGOS SECTION (BALANCED & FULL COLOR) --- */}
-                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-6 sm:gap-10 md:gap-16 opacity-95 transition-opacity">
-
-                        {/* XENDIT - md:h-10 (Sapat na laki para mabasa) */}
+                    {/* --- PARTNER LOGOS SECTION --- */}
+                    <div className="mt-16 pt-12 border-t border-gray-100 flex flex-wrap items-center justify-center gap-6 sm:gap-10 md:gap-16 opacity-95">
                         <img
                             src="https://www.xendit.co/wp-content/uploads/2020/03/XENDIT-LOGOArtboard-1@2x-1024x441.png"
                             alt="Xendit"
                             className="h-8 md:h-10 w-auto object-contain"
                         />
-
-                        {/* GCASH - Binabaan sa md:h-7 para pumantay ang visual weight */}
                         <img
                             src="https://upload.wikimedia.org/wikipedia/commons/5/52/GCash_logo.svg"
                             alt="GCash"
                             className="h-6 md:h-7 w-auto object-contain"
                         />
-
-                        {/* MAYA - md:h-12 (Dahil pabilog, kailangan mas mataas ang height para magmukhang pantay) */}
                         <img
                             src="https://business.inquirer.net/wp-content/blogs.dir/5/files/2020/11/PayMaya-Logo_Vertical.png"
                             alt="Maya"
                             className="h-10 md:h-12 w-auto object-contain"
-                            title="Accepted via Maya"
-                            onError={(e) => { e.target.src = "https://www.maya.ph/hubfs/Maya-logo-02.png" }}
                         />
-
-                        {/* AWS - Binabaan sa md:h-10 para hindi masyadong malaki ang "smile" logo */}
                         <img
                             src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg"
                             alt="AWS"
@@ -156,90 +156,48 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                             alt="Beautiful Wedding in ABE"
                             className="absolute inset-0 w-full h-full object-cover"
                         />
-                        {/* Floating Text Overlay */}
                         <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-20">
-                            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl shadow-2xl transform rotate-3">
                                 <p className="text-white text-sm sm:text-lg md:text-xl font-black tracking-widest italic text-right drop-shadow-2xl">
                                     "Selebrasyun a masaya,<br/>
                                     king scam malaut ya."
                                 </p>
                             </div>
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
 
             {/* --- 3. HOW IT WORKS --- */}
             <div className="py-24 bg-gray-950 relative overflow-hidden">
-                {/* Background Decor */}
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] -z-0"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] -z-0"></div>
-
                 <div className="max-w-6xl mx-auto px-6 relative z-10">
-            <div className="flex flex-col items-center mb-20">
-                <div className="w-full max-w-4xl mb-12">
-                    <div className="relative group">
-                        <div className="absolute -inset-4 bg-amber-500/20 rounded-[3rem] blur-2xl group-hover:bg-amber-500/30 transition duration-1000"></div>
-                        <img
-                            src="/Company%20image/abe%20events%20&%20smart%20escrow.png"
-                            alt="Smart Escrow Technology"
-                            className="relative w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(245,158,11,0.3)] transition-transform duration-700 group-hover:scale-105 rounded-[3rem]"
-                        />
-                        {/* Vignetting Overlay */}
-                        <div className="absolute inset-0 pointer-events-none rounded-[3rem] shadow-[inset_0_0_100px_rgba(0,0,0,0.8)] z-10"></div>
-                    </div>
-                </div>
-
-                <div className="text-center">
-                    <h3 className="text-amber-500 font-black text-[10px] tracking-[0.4em] uppercase mb-4">The Gold Standard</h3>
-                    <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">
-                        How <span className="text-amber-400 italic">Smart Escrow™</span><br/> Protects You
-                    </h2>
-                    <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-                        We've eliminated the fear of scams. Our proprietary escrow technology acts as a neutral vault, ensuring your money is only released when the job is perfectly done.
-                    </p>
-                </div>
-            </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="bg-white/5 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white/10 relative group hover:border-amber-500/30 transition-all">
-                            <h3 className="text-xl font-black text-white mb-4 tracking-tight">1. Book & Secure</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                Choose your vendor and pay via GCash or Card. Your money is <span className="text-amber-400 font-bold">locked</span> in our secure gold vault.
-                            </p>
-                        </div>
-
-                        <div className="bg-white/5 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white/10 relative group hover:border-amber-500/30 transition-all">
-                            <h3 className="text-xl font-black text-white mb-4 tracking-tight">2. Vendor Delivers</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                The vendor sees the funds are secured, so they start working with <span className="text-amber-400 font-bold">100% confidence</span>.
-                            </p>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-10 rounded-[2.5rem] shadow-2xl shadow-amber-500/20 relative group overflow-hidden">
-                            <h3 className="text-xl font-black text-white mb-4 tracking-tight relative z-10">3. You Release</h3>
-                            <p className="text-amber-50 text-sm leading-relaxed relative z-10">
-                                Job done? You click <span className="font-black underline">"Release Funds"</span>. The money is instantly transferred to the vendor.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* --- NEW SECTION: VERIFICATION SHIELD (Strict Vetting) --- */}
-            <div className="py-12 sm:py-20 bg-indigo-900 text-white overflow-hidden relative">
-                <div className="max-w-6xl mx-auto px-6 relative z-10">
-                    <div className="flex justify-center">
-                        <div className="w-full max-w-4xl relative group">
-                            <div className="absolute -inset-4 bg-indigo-500/20 rounded-[3rem] blur-2xl group-hover:bg-indigo-500/30 transition duration-1000"></div>
+                    <div className="flex flex-col items-center mb-20">
+                        <div className="w-full max-w-4xl mb-12 relative group">
                             <img
-                                src="/Zero%20Tolerance%20for%20Scams/Zero%20Tolerance%20for%20Scams.png"
-                                alt="Zero Tolerance for Scams"
-                                className="relative w-full h-auto object-contain drop-shadow-2xl rounded-[3rem] transition-transform duration-700 group-hover:scale-[1.02]"
+                                src="/Company%20image/abe%20events%20&%20smart%20escrow.png"
+                                alt="Smart Escrow Technology"
+                                className="relative w-full h-auto object-contain rounded-[3rem]"
                             />
+                        </div>
+                        <div className="text-center">
+                            <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tighter">
+                                How <span className="text-amber-400 italic">Smart Escrow™</span> Protects You
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+                        <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10">
+                            <h3 className="text-xl font-black text-white mb-4">1. Book & Secure</h3>
+                            <p className="text-gray-400 text-sm italic">Locked in our secure vault via GCash/Card.</p>
+                        </div>
+                        <div className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10">
+                            <h3 className="text-xl font-black text-white mb-4">2. Vendor Delivers</h3>
+                            <p className="text-gray-400 text-sm italic">Vendors work with 100% confidence.</p>
+                        </div>
+                        <div className="bg-amber-500 p-10 rounded-[2.5rem] shadow-2xl">
+                            <h3 className="text-xl font-black text-white mb-4">3. You Release</h3>
+                            <p className="text-amber-50 text-sm font-bold italic">Money is instantly transferred upon approval.</p>
                         </div>
                     </div>
                 </div>
@@ -251,9 +209,8 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                     <div className="flex justify-between items-end mb-12">
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">Browse Top Categories</h2>
-                            <p className="text-gray-500 mt-2">Curated professionals for your big day.</p>
                         </div>
-                        <button onClick={onFindSuppliers} className="text-indigo-600 font-bold hover:underline hidden md:block">View All Categories &rarr;</button>
+                        <button onClick={onFindSuppliers} className="text-indigo-600 font-bold hidden md:block italic underline">View All Categories &rarr;</button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -263,18 +220,13 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                             { id: 'venues', name: "Venues", count: "40+ Locations", img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=400&q=80" },
                             { id: 'djs', name: "Hosts & DJ", count: "60+ Artists", img: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=400&q=80" },
                         ].map((cat, i) => (
-                            <div key={i} onClick={onFindSuppliers} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden group">
-                                <div className="w-full h-40 bg-gray-200 overflow-hidden relative">
-                                    <img
-                                        src={cat.img}
-                                        alt={cat.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                    />
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+                            <div key={i} onClick={onFindSuppliers} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group cursor-pointer">
+                                <div className="w-full h-40 overflow-hidden relative">
+                                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                 </div>
                                 <div className="p-6">
-                                    <h4 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{cat.name}</h4>
-                                    <p className="text-xs text-gray-400 font-medium">{cat.count}</p>
+                                    <h4 className="font-bold text-gray-900">{cat.name}</h4>
+                                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{cat.count}</p>
                                 </div>
                             </div>
                         ))}
@@ -282,87 +234,34 @@ const LandingPage = ({ onLogin, onRegister, onVendorSignup, onFindSuppliers, onP
                 </div>
             </div>
 
-
-            {/* --- NEW: LIVE ACTIVITY FEED --- */}
-            <div className="py-12 bg-white border-t border-gray-100 overflow-hidden">
-                <div className="max-w-6xl mx-auto px-6">
-                    <div className="flex items-center gap-3 mb-8">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-                        <h3 className="font-bold text-gray-500 uppercase tracking-widest text-xs">Live Platform Activity</h3>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {/* Activity 1 */}
-                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl animate-pulse">
-                            <div className="text-2xl">📸</div>
-                            <div>
-                                <p className="text-sm font-bold text-gray-800">New Booking Secured</p>
-                                <p className="text-xs text-gray-400">Wedding Shoot • ₱50,000 locked</p>
-                            </div>
-                            <span className="ml-auto text-[10px] text-gray-300 font-bold uppercase">2m ago</span>
-                        </div>
-
-                        {/* Activity 2 */}
-                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
-                            <div className="text-2xl">💸</div>
-                            <div>
-                                <p className="text-sm font-bold text-gray-800">Payout Released</p>
-                                <p className="text-xs text-gray-400">To Photographer via GCash</p>
-                            </div>
-                            <span className="ml-auto text-[10px] text-gray-300 font-bold uppercase">15m ago</span>
-                        </div>
-
-                        {/* Activity 3 */}
-                        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
-                            <div className="text-2xl">🛡️</div>
-                            <div>
-                                <p className="text-sm font-bold text-gray-800">Vendor Verified</p>
-                                <p className="text-xs text-gray-400">Hair & Makeup Artist joined</p>
-                            </div>
-                            <span className="ml-auto text-[10px] text-gray-300 font-bold uppercase">1h ago</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* --- NEW: BETA COUNTDOWN BANNER --- */}
-            <div className="bg-indigo-900 py-16 px-6 text-center">
+            {/* --- 5. BETA BANNER --- */}
+            <div className="bg-indigo-900 py-16 px-6 text-center text-white">
                 <div className="max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold text-white mb-4">Limited Slots for Beta Testing</h2>
-                    <p className="text-indigo-200 mb-8">We are only accepting 15 pioneer photographers for this phase. Join the revolution of secure bookings today.</p>
-
-                    {/* Progress Bar */}
+                    <h2 className="text-3xl font-bold mb-4 italic">Limited Slots for Beta Testing</h2>
                     <div className="w-full bg-indigo-800 rounded-full h-4 mb-4 border border-indigo-700">
-                        <div className="bg-green-400 h-full rounded-full shadow-lg shadow-green-400/20" style={{ width: '60%' }}></div>
+                        <div className="bg-green-400 h-full rounded-full shadow-lg" style={{ width: '60%' }}></div>
                     </div>
-                    <div className="flex justify-between text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                    <div className="flex justify-between text-xs font-bold text-indigo-300 uppercase italic">
                         <span>9 Slots Registered</span>
                         <span>6 Slots Left</span>
                     </div>
-
-                    <button
-                        onClick={onVendorSignup}
-                        className="mt-10 bg-white text-indigo-900 font-black px-10 py-4 rounded-full hover:bg-indigo-50 transition-all shadow-2xl"
-                    >
-                        RESERVE MY VENDOR SLOT
-                    </button>
+                    <button onClick={onVendorSignup} className="mt-10 bg-white text-indigo-900 font-black px-10 py-4 rounded-full hover:shadow-2xl transition-all active:scale-95">RESERVE MY VENDOR SLOT</button>
                 </div>
             </div>
 
-            {/* --- 5. FOOTER --- */}
+            {/* --- 6. FOOTER --- */}
             <footer className="bg-white border-t border-gray-200 py-12">
-                <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="text-center md:text-left">
-                        <span className="text-xl font-black text-indigo-900 uppercase tracking-tighter">ABE <span className="italic text-indigo-600">Events</span></span>
-                        <p className="text-gray-400 text-sm mt-2">© 2025 All rights reserved. Gawang Kapampangan.</p>
+                <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
+                    <div>
+                        <span className="text-xl font-black text-indigo-900 uppercase">ABE <span className="italic text-indigo-600">Events</span></span>
+                        <p className="text-gray-400 text-[10px] font-bold mt-2 uppercase tracking-widest italic">Gawang Kapampangan.</p>
                     </div>
-                    <div className="flex gap-6 text-gray-500 text-sm font-medium">
-                        <button onClick={onPrivacyPolicy} className="hover:text-indigo-600">Privacy Policy</button>
-                        <button onClick={onTermsOfEscrow} className="hover:text-indigo-600">Terms of Escrow</button>
-                        <button onClick={onSupport} className="hover:text-indigo-600">Support</button>
+                    <div className="flex gap-6 text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                        <button onClick={onPrivacyPolicy} className="hover:text-indigo-600 transition-colors">Privacy Policy</button>
+                        <button onClick={onTermsOfEscrow} className="hover:text-indigo-600 transition-colors">Terms of Escrow</button>
+                        <button onClick={onSupport} className="hover:text-indigo-600 transition-colors">Support</button>
+                        {/* SECRET ADMIN BUTTON */}
+                        <button onClick={onAdminAccess} className="opacity-0 hover:opacity-100 text-gray-200 transition-opacity">Admin</button>
                     </div>
                 </div>
             </footer>

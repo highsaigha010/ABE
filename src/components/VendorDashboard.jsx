@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { generateInvoice } from '../utils/invoiceGenerator';
 
-const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification }) => {
+
   const currentJob = bookings[0];
 
   // STATE: Pera at Withdrawal Logic
@@ -9,6 +10,67 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false); // Para sa Popup
   const [selectedMethod, setSelectedMethod] = useState('gcash');   // Default selection
   const [isProcessing, setIsProcessing] = useState(false);         // Loading state
+  const [showAppealModal, setShowAppealModal] = useState(false);
+  const [appealText, setAppealText] = useState('');
+
+  // --- NEW GPS LOGIC START ---
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+
+  // Haversine formula para sa mas tumpak na distansya
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // Radius ng Earth sa meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distansya sa meters
+  };
+
+  const handleGPSCheckIn = () => {
+    if (!navigator.geolocation) {
+      showNotification("Abe, hindi supported ang GPS sa browser mo!", "error");
+      return;
+    }
+
+    setIsCheckingIn(true);
+
+    // TARGET VENUE COORDINATES
+    const VENUE_LAT = 15.1794;
+    const VENUE_LNG = 120.5275;
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+
+      const distance = calculateDistance(userLat, userLng, VENUE_LAT, VENUE_LNG);
+
+      // Threshold: 500 meters
+      if (distance <= 7000) {
+        try {
+          const response = await onUpdateStatus(currentJob.id, 'RELEASE_20');
+          if (response.success) {
+            // Toast is shown in App.jsx via onUpdateStatus -> callSmartEscrowAPI
+            setBalance(prev => prev + (currentJob.price * 0.20));
+          }
+        } catch (error) {
+          showNotification("❌ Error updating escrow status, Abe. Subukan mo ulit.", "error");
+        }
+      } else {
+        showNotification(`Abe, malayo ka pa! (Distansya: ${Math.round(distance)}m). Dapat nasa loob ka ng 500m radius ng venue.`, "error");
+      }
+      setIsCheckingIn(false);
+    }, () => {
+      showNotification("E makuha ing lokasyon mu, Abe! I-on me ing GPS mu.", "error");
+      setIsCheckingIn(false);
+    });
+  };
+  // --- NEW GPS LOGIC END ---
 
   // BANK OPTIONS (Mock Data)
   const payoutMethods = [
@@ -21,7 +83,7 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
   // STEP 1: Buksan ang Modal
   const handleOpenWithdraw = () => {
     if (balance <= 0) {
-      alert("No funds available to withdraw.");
+      showNotification("No funds available to withdraw.", "error");
       return;
     }
     setShowWithdrawModal(true);
@@ -41,30 +103,33 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
       setIsProcessing(false);
       setShowWithdrawModal(false); // Close Modal
 
-      // Show Success Alert with Details
+      // Show Success Toast with Details
       const method = payoutMethods.find(m => m.id === selectedMethod);
-      alert(`✅ TRANSFER SUCCESSFUL!\n\nSent ₱${amount.toLocaleString()} to ${method.name}.\nReference: TR-${Math.floor(Math.random()*100000)}`);
+      showNotification(`₱${amount.toLocaleString()} Transferred to ${method.name}! Reference: TR-${Math.floor(Math.random()*100000)}`, "success");
     }, 2500);
   };
 
-  // Baguhin natin ito para maging specific sa Escrow API call
-  const handleMarkComplete = async () => {
-    if (confirm("Confirm event delivery? This notifies the client to release funds.")) {
-      setIsProcessing(true); // Eto yung bubuhay sa spinner sa baba (the Authorization button)
-
-      try {
-        // TAWAG NA SA API SIMULATOR NATIN SA APP.JSX
-        const response = await onUpdateStatus(currentJob.id, 'COMPLETE');
-
-        if (response.success) {
-          alert("✅ SUCCESS: Event marked as Completed. Notification sent to Client!");
-        }
-      } catch (error) {
-        alert("❌ ERROR: Smart Escrow server is busy. Please try again.");
-      } finally {
-        setIsProcessing(false); // Patay na ang spinner
-      }
+  const handleMarkComplete = () => {
+    if (confirm("Are you sure the event is done? This will notify the client to release funds.")) {
+      onUpdateStatus(currentJob.id, 'COMPLETE');
     }
+  };
+
+  const submitAppeal = async () => {
+    if (appealText.length < 20) {
+      showNotification("Abe, pakihabaan naman ng konti ang depensa mo.", "error");
+      return;
+    }
+
+    setIsProcessing(true);
+    setShowAppealModal(false);
+
+    setTimeout(async () => {
+      const disputedBooking = bookings.find(b => b.status === 'disputed');
+      await onUpdateStatus(disputedBooking.id, 'APPEAL', { appeal: appealText });
+      setIsProcessing(false);
+      setAppealText('');
+    }, 1500);
   };
 
   return (
@@ -76,15 +141,15 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
             <div className="flex items-center gap-2">
               <span className="text-2xl font-black text-gray-900 tracking-tighter uppercase">
                 ABE <span className="text-indigo-600 italic">EVENTS</span>
-                <span className="ml-3 text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md tracking-widest font-black uppercase hidden sm:inline-block">Vendor Portal</span>
+                <span className="ml-3 text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md tracking-widest font-black uppercase">Vendor Portal</span>
               </span>
             </div>
 
-            <div className="hidden md:flex items-center gap-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+            <div className="flex items-center gap-8">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hidden md:block">
                 Partner <span className="text-gray-900 ml-2">{user?.name || 'Supplier'}</span>
               </span>
-              <div className="h-4 w-px bg-gray-100"></div>
+              <div className="h-4 w-px bg-gray-100 hidden md:block"></div>
               <button
                   onClick={onLogout}
                   className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 hover:text-white hover:bg-red-500 border border-red-100 px-5 py-2.5 rounded-xl transition-all active:scale-95"
@@ -92,59 +157,28 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
                 Log Out
               </button>
             </div>
-
-            {/* Mobile Menu Toggle */}
-            <button 
-                className="md:hidden p-2 text-gray-900 focus:outline-none"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {isMenuOpen ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                    )}
-                </svg>
-            </button>
           </div>
-
-          {/* Mobile Menu Overlay */}
-          {isMenuOpen && (
-              <div className="md:hidden bg-white border-b border-gray-100 absolute top-20 left-0 w-full p-6 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300 z-50">
-                  <div className="py-3 border-b border-gray-50">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Partner</p>
-                      <p className="text-sm font-bold text-gray-900 mt-1">{user?.name || 'Supplier'}</p>
-                      <span className="mt-2 inline-block text-[8px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md tracking-widest font-black uppercase">Vendor Portal</span>
-                  </div>
-                  <button
-                      onClick={onLogout}
-                      className="w-full bg-red-50 text-red-600 px-6 py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all text-center"
-                  >
-                      Log Out
-                  </button>
-              </div>
-          )}
         </nav>
 
         <div className="max-w-6xl mx-auto p-6 md:p-12">
-          <div className="mb-12 text-center md:text-left">
+          <div className="mb-12">
             <h3 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-2">Performance Analytics</h3>
-            <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter">Vendor Dashboard</h1>
-            <p className="text-gray-400 font-medium mt-2 text-sm md:text-base">Manage your professional bookings and secure payouts.</p>
+            <h1 className="text-5xl font-black text-gray-900 tracking-tighter">Vendor Dashboard</h1>
+            <p className="text-gray-400 font-medium mt-2">Manage your professional bookings and secure payouts.</p>
           </div>
 
           {/* STATS ROW */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
 
             {/* DARK CARD: EARNINGS */}
-            <div className="bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] shadow-2xl shadow-gray-200 text-white relative overflow-hidden group">
+            <div className="bg-gray-900 p-10 rounded-[2.5rem] shadow-2xl shadow-gray-200 text-white relative overflow-hidden group">
               <div className="relative z-10">
                 <p className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Available Balance</p>
-                <p className="text-4xl sm:text-5xl font-black tracking-tighter italic mb-8 sm:mb-10">₱{balance.toLocaleString()}</p>
+                <p className="text-5xl font-black tracking-tighter italic mb-10">₱{balance.toLocaleString()}</p>
 
                 <button
                     onClick={handleOpenWithdraw}
-                    className="w-full py-4 sm:py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-white text-gray-900 hover:bg-indigo-50 shadow-xl transition-all transform hover:-translate-y-1 active:scale-95"
+                    className="w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-white text-gray-900 hover:bg-indigo-50 shadow-xl transition-all transform hover:-translate-y-1 active:scale-95"
                 >
                   Withdraw Funds
                 </button>
@@ -152,18 +186,23 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
               <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-colors"></div>
             </div>
 
-            {/* YELLOW CARD: ESCROW */}
-            <div className={`p-8 sm:p-10 rounded-[2.5rem] shadow-xl border-2 transition-all duration-500 flex flex-col justify-between relative overflow-hidden
-                ${currentJob.status === 'paid' ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-50 opacity-60'}`}>
+            {/* ESCROW CARD (Modified to show 20% Release Status) */}
+            <div className={`p-10 rounded-[2.5rem] shadow-xl border-2 transition-all duration-500 flex flex-col justify-between relative overflow-hidden
+                ${currentJob.status === 'paid' || currentJob.status === 'partially_released' ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-50 opacity-60'}`}>
               <div>
-                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${currentJob.status === 'paid' ? 'text-amber-600' : 'text-gray-400'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${currentJob.status === 'paid' || currentJob.status === 'partially_released' ? 'text-amber-600' : 'text-gray-400'}`}>
                   Funds in Escrow
                 </p>
-                <p className={`text-4xl font-black tracking-tighter mt-4 ${currentJob.status === 'paid' ? 'text-gray-900' : 'text-gray-200'}`}>
-                  {currentJob.status === 'paid' ? `₱${currentJob.price.toLocaleString()}` : '₱0.00'}
+                <p className={`text-4xl font-black tracking-tighter mt-4 ${currentJob.status === 'paid' || currentJob.status === 'partially_released' ? 'text-gray-900' : 'text-gray-200'}`}>
+                  {currentJob.status === 'paid' || currentJob.status === 'partially_released' 
+                    ? `₱${(currentJob.status === 'partially_released' ? currentJob.price * 0.8 : currentJob.price).toLocaleString()}` 
+                    : '₱0.00'}
                 </p>
+                {currentJob.status === 'partially_released' && (
+                  <p className="text-[10px] font-bold text-green-600 uppercase mt-2 italic">20% Mobilization Released ✅</p>
+                )}
               </div>
-              {currentJob.status === 'paid' && (
+              {(currentJob.status === 'paid' || currentJob.status === 'partially_released') && (
                 <div className="mt-8 flex items-center gap-2">
                   <span className="text-xl">🔒</span>
                   <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Smart Escrow Locked</span>
@@ -173,10 +212,10 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
             </div>
 
             {/* WHITE CARD: COMPLETED */}
-            <div className="bg-white p-8 sm:p-10 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col justify-between">
+            <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-gray-50 flex flex-col justify-between">
               <div>
                 <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Total Deliveries</p>
-                <h3 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter mt-4">12</h3>
+                <h3 className="text-4xl font-black text-gray-900 tracking-tighter mt-4">12</h3>
               </div>
               <div className="mt-8">
                 <span className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100">
@@ -186,61 +225,114 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
             </div>
           </div>
 
-          {/* ACTIVE JOB SECTION - Updated for responsiveness */}
+          {/* DISPUTE ALERT */}
+          {bookings.some(b => b.status === 'disputed') && (
+            <div className="mb-12 bg-red-50 border border-red-100 rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-red-200 animate-pulse">
+                  🚨
+                </div>
+                <div>
+                  <h4 className="text-red-600 font-black uppercase tracking-widest text-xs mb-1">Dispute Filed</h4>
+                  {bookings.filter(b => b.status === 'disputed').map(b => (
+                    <div key={b.id} className="text-gray-900">
+                      <p className="font-bold text-lg leading-tight">
+                        {b.disputeCategory} - <span className="text-gray-500 font-medium italic">"{b.disputeReason}"</span>
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-black uppercase mt-1">Client: {b.clientName} • Transaction ID: {b.id}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAppealModal(true)}
+                className="bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl shadow-gray-200 active:scale-95 whitespace-nowrap"
+              >
+                Appeal Decision
+              </button>
+            </div>
+          )}
+
+          {/* JOB LIST */}
           <div className="flex justify-between items-end mb-8">
             <div>
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Operational Flow</h3>
-                <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter mt-2">Active Bookings</h2>
+                <h2 className="text-3xl font-black text-gray-900 tracking-tighter mt-2">Active Bookings</h2>
             </div>
           </div>
           
-          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl shadow-gray-100/50 overflow-x-auto border border-gray-50">
-            <table className="w-full text-left min-w-[600px]">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-100/50 overflow-hidden border border-gray-50">
+            <table className="w-full text-left">
               <thead className="bg-gray-50/50 text-[10px] text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50">
               <tr>
-                <th className="px-6 sm:px-10 py-6 font-black">Client Details</th>
-                <th className="px-6 sm:px-10 py-6 font-black">Escrow Status</th>
-                <th className="px-6 sm:px-10 py-6 font-black text-right">Action</th>
+                <th className="px-10 py-6 font-black">Client Details</th>
+                <th className="px-10 py-6 font-black">Escrow Status</th>
+                <th className="px-10 py-6 font-black text-right">Action</th>
               </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
               <tr className="hover:bg-indigo-50/30 transition-colors">
-                <td className="px-6 sm:px-10 py-8">
-                  <p className="font-black text-gray-900 text-base sm:text-lg tracking-tight">{currentJob.clientName}</p>
-                  <p className="text-[10px] sm:text-xs text-indigo-600 font-bold uppercase tracking-widest mt-1">{currentJob.date}</p>
+                <td className="px-10 py-8">
+                  <p className="font-black text-gray-900 text-lg tracking-tight">{currentJob.clientName}</p>
+                  <p className="text-xs text-indigo-600 font-bold uppercase tracking-widest mt-1">{currentJob.date}</p>
                 </td>
-                <td className="px-6 sm:px-10 py-8">
+                <td className="px-10 py-8">
                   {currentJob.status === 'unpaid' && (
-                      <span className="bg-gray-100 text-gray-500 px-3 sm:px-4 py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-gray-200">
+                      <span className="bg-gray-100 text-gray-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200">
                         ⏳ Awaiting Payment
                       </span>
                   )}
                   {currentJob.status === 'paid' && (
-                      <span className="bg-amber-100 text-amber-700 px-3 sm:px-4 py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-amber-200 animate-pulse">
+                      <span className="bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200 animate-pulse">
                         🔒 Secured in Escrow
                       </span>
                   )}
+                  {currentJob.status === 'partially_released' && (
+                      <span className="bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-200">
+                        📍 On-Site / 20% Released
+                      </span>
+                  )}
                   {currentJob.status === 'completed' && (
-                      <span className="bg-indigo-100 text-indigo-700 px-3 sm:px-4 py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-indigo-200">
+                      <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200">
                         📫 Pending Release
                       </span>
                   )}
                   {currentJob.status === 'released' && (
-                      <span className="bg-green-100 text-green-700 px-3 sm:px-4 py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest border border-green-200">
+                      <span className="bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-200">
                         ✅ Transaction Finalized
                       </span>
                   )}
                 </td>
-                <td className="px-6 sm:px-10 py-8 text-right">
+                <td className="px-10 py-8 text-right flex flex-col sm:flex-row justify-end gap-2">
                   {currentJob.status === 'paid' && (
-                      <button 
-                        onClick={handleMarkComplete} 
-                        className="bg-gray-900 text-white px-5 sm:px-8 py-3 sm:py-4 rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95 transform hover:-translate-y-0.5"
+                      <button
+                          onClick={handleGPSCheckIn}
+                          disabled={isCheckingIn}
+                          className="bg-indigo-600 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg flex items-center gap-2"
+                      >
+                        {isCheckingIn ? "📍 Verifying..." : "📍 Check-in Venue"}
+                      </button>
+                  )}
+
+                  {(currentJob.status === 'paid' || currentJob.status === 'partially_released') && (
+                      <button
+                          onClick={handleMarkComplete}
+                          className="bg-gray-900 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black shadow-lg"
                       >
                         Confirm Delivery
                       </button>
                   )}
-                  {currentJob.status === 'released' && <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Completed</span>}
+                  {currentJob.status === 'released' && (
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Completed</span>
+                      <button
+                        onClick={() => generateInvoice(currentJob)}
+                        className="text-indigo-600 hover:text-indigo-800 font-black text-[10px] uppercase underline tracking-widest"
+                      >
+                        Download Receipt
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
               </tbody>
@@ -248,39 +340,78 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
           </div>
         </div>
 
+        {/* APPEAL MODAL */}
+        {showAppealModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-indigo-950/40 backdrop-blur-sm" onClick={() => setShowAppealModal(false)}></div>
+            <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg relative shadow-2xl border border-indigo-50">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-600 to-indigo-400"></div>
+              <h3 className="text-2xl font-black text-gray-900 italic tracking-tighter uppercase mb-2">Vendor Appeal</h3>
+              <p className="text-gray-400 text-xs mb-8 font-medium italic">Ibigay ang iyong panig, Abe. Ang Admin ang magdedesisyon base sa ebidensya.</p>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-2">Ang iyong depensa</label>
+                  <textarea 
+                    placeholder="Abe, ipaliwanag ang nangyari sa iyong panig... (Min 20 characters)"
+                    value={appealText}
+                    onChange={(e) => setAppealText(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-3xl py-4 px-6 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[150px] transition-all"
+                  ></textarea>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    onClick={submitAppeal}
+                    className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-100 active:scale-95"
+                  >
+                    Submit Appeal
+                  </button>
+                  <button 
+                    onClick={() => setShowAppealModal(false)}
+                    className="px-8 bg-gray-50 text-gray-400 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* --- WITHDRAWAL POPUP MODAL --- */}
         {showWithdrawModal && (
-            <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm sm:backdrop-blur-md z-[60] flex items-center justify-center p-4 sm:p-6 animate-fade-in overflow-y-auto">
-              <div className="bg-white rounded-[2rem] sm:rounded-[3rem] w-full max-w-lg shadow-2xl overflow-hidden border border-white/20 my-auto">
+            <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+              <div className="bg-white rounded-[3rem] w-full max-w-lg shadow-2xl overflow-hidden border border-white/20">
 
                 {/* Modal Header */}
-                <div className="bg-white p-6 sm:p-10 pb-4 sm:pb-6 flex justify-between items-center border-b border-gray-50">
+                <div className="bg-white p-10 pb-6 flex justify-between items-center border-b border-gray-50">
                   <div>
-                    <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tighter">Payout Settings</h3>
-                    <p className="text-gray-400 text-[10px] sm:text-xs font-medium mt-1 uppercase tracking-widest">Select your preferred destination</p>
+                    <h3 className="text-3xl font-black text-gray-900 tracking-tighter">Payout Settings</h3>
+                    <p className="text-gray-400 text-xs font-medium mt-1 uppercase tracking-widest">Select your preferred destination</p>
                   </div>
-                  <button onClick={() => setShowWithdrawModal(false)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gray-50 text-gray-400 hover:text-gray-900 flex items-center justify-center transition-colors font-black text-lg sm:text-xl">✕</button>
+                  <button onClick={() => setShowWithdrawModal(false)} className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-400 hover:text-gray-900 flex items-center justify-center transition-colors font-black text-xl">✕</button>
                 </div>
 
                 {/* Modal Body */}
-                <div className="p-6 sm:p-10">
-                  <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-indigo-50 rounded-[1.5rem] sm:rounded-[2rem] border border-indigo-100 flex justify-between items-center">
-                    <span className="text-[10px] sm:text-xs font-black text-indigo-900 uppercase tracking-widest">Amount to Transfer</span>
-                    <span className="text-xl sm:text-2xl font-black text-indigo-600 tracking-tighter italic">₱50,000.00</span>
+                <div className="p-10">
+                  <div className="mb-8 p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 flex justify-between items-center">
+                    <span className="text-xs font-black text-indigo-900 uppercase tracking-widest">Amount to Transfer</span>
+                    <span className="text-2xl font-black text-indigo-600 tracking-tighter italic">₱50,000.00</span>
                   </div>
 
                   {/* Bank Selection Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 sm:mb-10">
+                  <div className="grid grid-cols-2 gap-4 mb-10">
                     {payoutMethods.map((method) => (
                         <div
                             key={method.id}
                             onClick={() => setSelectedMethod(method.id)}
-                            className={`p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border-2 cursor-pointer transition-all flex flex-row sm:flex-col items-center gap-4 sm:gap-3 relative overflow-hidden
+                            className={`p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col items-center gap-3 relative overflow-hidden
                                     ${selectedMethod === method.id
                                 ? 'border-indigo-600 bg-indigo-50/50 shadow-xl shadow-indigo-100/30'
                                 : 'border-gray-50 hover:border-gray-100 bg-gray-50/30'}`}
                         >
-                          <span className="text-2xl sm:text-3xl grayscale group-hover:grayscale-0">{method.icon}</span>
+                          <span className="text-3xl grayscale group-hover:grayscale-0">{method.icon}</span>
                           <span className={`text-[10px] font-black uppercase tracking-widest ${selectedMethod === method.id ? 'text-indigo-900' : 'text-gray-400'}`}>
                                     {method.name}
                                 </span>
@@ -292,12 +423,12 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
                   </div>
 
                   {/* Dummy Account Input */}
-                  <div className="mb-8 sm:mb-10">
+                  <div className="mb-10">
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Receiving Account Details</label>
                     <input
                         type="text"
                         placeholder="Mobile # or Account Number"
-                        className="w-full px-6 sm:px-8 py-4 sm:py-5 bg-gray-50 border-2 border-gray-50 rounded-2xl font-bold text-sm focus:outline-none focus:border-indigo-500 transition-all placeholder-gray-300"
+                        className="w-full px-8 py-5 bg-gray-50 border-2 border-gray-50 rounded-2xl font-bold text-sm focus:outline-none focus:border-indigo-500 transition-all placeholder-gray-300"
                     />
                   </div>
 
@@ -305,7 +436,7 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus }) => {
                   <button
                       onClick={handleConfirmTransfer}
                       disabled={isProcessing}
-                      className={`w-full py-5 sm:py-6 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-[0.2em] shadow-2xl transition-all flex justify-center items-center gap-4
+                      className={`w-full py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all flex justify-center items-center gap-4
                             ${isProcessing
                           ? 'bg-gray-200 text-gray-400 cursor-wait'
                           : 'bg-gray-900 hover:bg-indigo-600 text-white transform hover:-translate-y-1 active:scale-95 shadow-indigo-200'}`}

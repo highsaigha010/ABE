@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { generateInvoice } from '../utils/invoiceGenerator';
 
-const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onBack }) => {
+const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onBack, showNotification }) => {
   const [selectedPkg, setSelectedPkg] = useState('essential');
   const [isLoading, setIsLoading] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
 
   // LOCAL STATE FOR DISPUTE (Visual for Demo)
   const [isDisputed, setIsDisputed] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeForm, setDisputeForm] = useState({ category: 'Quality Issues', reason: '', evidence: null });
 
   // Status Checks
   const isPaid = bookingData.status !== 'unpaid';
@@ -15,7 +18,7 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
 
   const handlePay = () => {
     if (!user) {
-      alert("🔒 Login Required");
+      showNotification("🔒 Login Required", "error");
       onRedirectToLogin();
       return;
     }
@@ -27,36 +30,112 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
   };
 
   const handleReleaseFunds = () => {
-    if (confirm("Are you sure? This will transfer the money to the Vendor's wallet instantly.")) {
+    if (confirm("Are you sure? This will transfer the 80% remaining balance to the Vendor's wallet instantly.")) {
       setIsReleasing(true);
       setTimeout(() => {
         setIsReleasing(false);
-        onUpdateStatus(bookingData.id, 'released');
-        alert("Funds Released! Transaction Closed.");
+        onUpdateStatus(bookingData.id, 'RELEASE');
+        // Toast is shown in App.jsx via onUpdateStatus -> callSmartEscrowAPI
       }, 2000);
     }
   };
 
   // --- DISPUTE LOGIC ---
   const handleReportProblem = () => {
-    // 1. Ask for reason
-    const reason = prompt("Please tell us why you are reporting this vendor:");
+    setShowDisputeModal(true);
+  };
 
-    if (reason) {
-      setIsLoading(true);
-      // 2. Simulate Admin Process
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsDisputed(true); // Trigger Red Badge
-        alert(`🚨 DISPUTE FILED. \n\nReason: "${reason}"\n\nFunds have been FROZEN. Our support team will contact you within 24 hours.`);
-      }, 1500);
+  const submitDispute = async () => {
+    if (disputeForm.reason.length < 20) {
+      showNotification("Abe, pakihabaan naman ng konti (min. 20 chars).", "error");
+      return;
     }
+
+    setIsLoading(true);
+    setShowDisputeModal(false);
+
+    // Simulate Image Upload or just use a placeholder
+    const evidenceUrl = disputeForm.evidence 
+      ? URL.createObjectURL(disputeForm.evidence) 
+      : 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=300';
+
+    setTimeout(async () => {
+      await onUpdateStatus(bookingData.id, 'DISPUTE', {
+        category: disputeForm.category,
+        reason: disputeForm.reason,
+        evidence: evidenceUrl
+      });
+      setIsLoading(false);
+      setIsDisputed(true);
+    }, 1500);
   };
 
   // --- SUCCESS VIEW (ESCROW DASHBOARD) ---
   if (isPaid) {
     return (
-        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6 selection:bg-amber-100">
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6 selection:bg-amber-100 relative">
+          {/* DISPUTE MODAL */}
+          {showDisputeModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowDisputeModal(false)}></div>
+              <div className="bg-gray-900 border border-red-500/20 rounded-[2.5rem] p-10 w-full max-w-lg relative shadow-2xl overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-orange-600"></div>
+                <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-2">File a Dispute</h3>
+                <p className="text-gray-400 text-xs mb-8 font-medium">Abe, siguraduhin nating patas ang laban. Ipaliwanag ang nangyari.</p>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-[10px] font-black text-red-500 uppercase tracking-widest block mb-2">Category</label>
+                    <select 
+                      value={disputeForm.category}
+                      onChange={(e) => setDisputeForm({...disputeForm, category: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                    >
+                      <option className="bg-gray-900">Late Arrival</option>
+                      <option className="bg-gray-900">Quality Issues</option>
+                      <option className="bg-gray-900">No Show</option>
+                      <option className="bg-gray-900">Unprofessional Behavior</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black text-red-500 uppercase tracking-widest block mb-2">Detailed Explanation</label>
+                    <textarea 
+                      placeholder="Abe, ipaliwanag mo ang nangyari... (Min 20 characters)"
+                      value={disputeForm.reason}
+                      onChange={(e) => setDisputeForm({...disputeForm, reason: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-3xl py-4 px-6 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[120px] transition-all"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black text-red-500 uppercase tracking-widest block mb-2">Evidence (Optional)</label>
+                    <input 
+                      type="file"
+                      onChange={(e) => setDisputeForm({...disputeForm, evidence: e.target.files[0]})}
+                      className="text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button 
+                      onClick={submitDispute}
+                      className="flex-1 bg-red-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-xl shadow-red-900/20 active:scale-95"
+                    >
+                      Submit Dispute
+                    </button>
+                    <button 
+                      onClick={() => setShowDisputeModal(false)}
+                      className="px-8 bg-white/5 text-gray-400 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-gray-900 p-12 rounded-[3rem] w-full max-w-lg border border-amber-500/10 shadow-2xl shadow-amber-500/5 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-500 to-amber-600"></div>
             <button onClick={onBack} className="absolute top-8 right-8 w-10 h-10 rounded-xl bg-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors font-black text-sm border border-white/10">✕</button>
@@ -129,7 +208,10 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
             {/* BUTTONS AREA */}
             <div className="space-y-4">
               {isMoneyReleased ? (
-                  <button className="w-full bg-amber-600 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/20">
+                  <button 
+                    onClick={() => generateInvoice(bookingData)}
+                    className="w-full bg-amber-600 text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/20"
+                  >
                     Download Final Invoice
                   </button>
               ) : (
@@ -142,7 +224,7 @@ const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onB
                             ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5'
                             : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/40 transform hover:-translate-y-1 active:scale-95'}`}
                     >
-                      {isReleasing ? 'Transmitting Funds...' : (isJobDone ? 'Authorize Final Payout' : 'Awaiting Deliverables')}
+                      {isReleasing ? 'Transmitting Funds...' : (isJobDone ? 'Release Final Payout (80%)' : 'Awaiting Deliverables')}
                     </button>
 
                     {/* THE DISPUTE BUTTON */}

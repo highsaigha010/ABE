@@ -7,9 +7,11 @@ import VendorSearchPage from './components/VendorSearchPage';
 import BookingPage from './components/BookingPage';
 import BookingDetails from './components/BookingDetails';
 import VendorDashboard from "./components/VendorDashboard";
+import AdminDashboard from "./components/AdminDashboard";
 import SupportCenter from "./components/SupportCenter";
 import TermsForESCROW from "./components/TermsForESCROW";
 import LegalPage from "./components/LegalPage";
+import NotificationToast from "./components/NotificationToast";
 import {Analytics} from '@vercel/analytics/react';
 
 export default function App() {
@@ -31,8 +33,30 @@ export default function App() {
     const [user, setUser] = useState(null);
     const [currentView, setCurrentView] = useState('landing');
     const [selectedVendorId, setSelectedVendorId] = useState(null);
+    const [notification, setNotification] = useState(null);
+
+    // --- NOTIFICATION SYSTEM ---
+    const showNotification = (message, type = 'info') => {
+        const id = Date.now();
+        setNotification({ id, message, type });
+
+        // THE 'CHING!' SOUND
+        if (type === 'success') {
+            const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/descent/gotitem.mp3');
+            audio.play().catch(e => console.log("Audio play failed:", e));
+        }
+    };
 
     // --- 1. THE SHARED DATABASE (Mock Data) ---
+    // Dagdagan natin ng Users Database para sa Security System
+    const [users, setUsers] = useState([
+        { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false },
+        { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false },
+        { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false },
+        { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false },
+        { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true },
+    ]);
+
     // Ito ang "Single Source of Truth". Konektado dito si Client at Vendor.
     const [bookings, setBookings] = useState([
         {
@@ -42,43 +66,134 @@ export default function App() {
             date: 'Dec 25, 2025',
             package: 'Essential Experience',
             price: 50245,
-            status: 'unpaid' // options: 'unpaid', 'paid', 'completed', 'released'
+            status: 'unpaid',
+            disputeReason: '',
+            disputeEvidence: null,
+            vendorAppeal: ''
+        },
+        {
+            id: 'txn-002',
+            clientName: 'Juan Dela Cruz',
+            vendorName: 'Mabalacat Bridal Cars',
+            date: 'Dec 20, 2025',
+            package: 'Luxury Ride',
+            price: 15000,
+            status: 'disputed',
+            disputeCategory: 'Late Arrival',
+            disputeReason: 'Abe, halos dalawang oras silang late sa venue. Muntik na kaming hindi makarating sa simbahan.',
+            disputeEvidence: 'https://images.unsplash.com/photo-1501747315-124a0eaca060?auto=format&fit=crop&q=80&w=300',
+            vendorAppeal: 'Nagkaroon po ng hindi inaasahang heavy traffic sa San Fernando dahil sa parada.'
         }
     ]);
 
     // Function para ma-update ang status (gagamitin ni BookingPage at VendorDashboard)
-    const updateBookingStatus = async (bookingId, action) => {
-        return await callSmartEscrowAPI(bookingId, action);
+    const updateBookingStatus = async (bookingId, action, extraData = {}) => {
+        return await callSmartEscrowAPI(bookingId, action, extraData);
     };
 
     // --- SMART ESCROW API SIMULATOR ---
-    const callSmartEscrowAPI = async (bookingId, action) => {
+    const callSmartEscrowAPI = async (targetId, action, extraData = {}) => {
         const normalizedAction = action.toUpperCase();
-        console.log(`📡 Sending Request to API: [${normalizedAction}] for Booking #${bookingId}`);
+        console.log(`📡 Sending Request to API: [${normalizedAction}] for Target #${targetId}`, extraData);
 
-        // Simulate Network Latency (Kunwari bumibiyahe ang data sa AWS)
+        // Simulate Network Latency
         return new Promise((resolve) => {
             setTimeout(() => {
-                const success = true; // Dito mo pwedeng i-test yung error handling mamaya
+                const success = true;
 
                 if (success) {
+                    let notificationMsg = "Escrow Updated";
+                    let notificationType = "success";
+
+                    // Handle User Actions (Ban, Strike)
+                    if (normalizedAction === 'BAN_USER') {
+                        setUsers(prev => prev.map(u => 
+                            u.id === targetId ? { ...u, isBanned: true } : u
+                        ));
+                        
+                        // Hold active bookings of this user
+                        const bannedUser = users.find(u => u.id === targetId);
+                        setBookings(prev => prev.map(b => {
+                            if (b.clientName === bannedUser?.name || b.vendorName === bannedUser?.name) {
+                                if (b.status !== 'released' && b.status !== 'refunded') {
+                                    return { ...b, status: 'disputed', disputeReason: 'Account suspended by Admin.' };
+                                }
+                            }
+                            return b;
+                        }));
+
+                        notificationMsg = `Account ${targetId} has been BANNED.`;
+                        notificationType = "error";
+                    }
+
+                    // Handle Booking Actions
                     setBookings(prev => prev.map(b => {
-                        if (b.id === bookingId) {
-                            if (normalizedAction === 'PAY' || normalizedAction === 'PAID') return {
-                                ...b,
-                                status: 'paid'
-                            };
-                            if (normalizedAction === 'COMPLETE') return {...b, status: 'completed'};
-                            if (normalizedAction === 'RELEASE' || normalizedAction === 'RELEASED') return {
-                                ...b,
-                                status: 'released'
-                            };
+                        if (b.id === targetId) {
+                            if (normalizedAction === 'PAY' || normalizedAction === 'PAID') {
+                                notificationMsg = `Payment Secured for ${b.vendorName}!`;
+                                return { ...b, status: 'paid' };
+                            }
+
+                            if (normalizedAction === 'DISPUTE') {
+                                notificationMsg = `🚨 Dispute Filed for ${b.vendorName}. Funds Frozen.`;
+                                return { 
+                                    ...b, 
+                                    status: 'disputed', 
+                                    disputeCategory: extraData.category,
+                                    disputeReason: extraData.reason,
+                                    disputeEvidence: extraData.evidence 
+                                };
+                            }
+
+                            if (normalizedAction === 'APPEAL') {
+                                notificationMsg = `✅ Appeal Submitted for ${b.id}.`;
+                                return { ...b, vendorAppeal: extraData.appeal };
+                            }
+
+                            if (normalizedAction === 'RELEASE_20') {
+                                notificationMsg = `₱${(b.price * 0.20).toLocaleString()} Mobilization Released! Ching!`;
+                                return { ...b, status: 'partially_released' };
+                            }
+
+                            if (normalizedAction === 'COMPLETE') {
+                                notificationMsg = `Job Completed! Awaiting final release for ${b.vendorName}.`;
+                                return { ...b, status: 'completed' };
+                            }
+
+                            if (normalizedAction === 'RELEASE' || normalizedAction === 'RELEASED') {
+                                notificationMsg = `Transaction Finalized! ₱${(b.price * 0.8).toLocaleString()} sent to ${b.vendorName}.`;
+                                return { ...b, status: 'released' };
+                            }
+
+                            if (normalizedAction === 'REFUNDED') {
+                                notificationMsg = `Dispute Resolved: 100% Refund issued to ${b.clientName}.`;
+                                
+                                // Automatic Strike for Vendor
+                                setUsers(prevUsers => prevUsers.map(u => {
+                                    if (u.name === b.vendorName) {
+                                        return { ...u, strikes: u.strikes + 1 };
+                                    }
+                                    return u;
+                                }));
+
+                                return { ...b, status: 'refunded' };
+                            }
+
+                            if (normalizedAction === 'SPLIT') {
+                                notificationMsg = `Dispute Resolved: Payout split between Vendor and Client.`;
+                                return { ...b, status: 'split' };
+                            }
                         }
                         return b;
                     }));
-                    resolve({status: 200, message: "Escrow Updated", success: true});
+
+                    showNotification(notificationMsg, notificationType);
+                    resolve({ status: 200, message: "Action Success", success: true });
+                } else {
+                    showNotification("Action Failed", "error");
+                    resolve({ status: 500, message: "Action Failed", success: false });
                 }
-            }, 1500); // 1.5 seconds delay
+            }, 1500);
         });
     };
 
@@ -105,8 +220,21 @@ export default function App() {
     };
 
     const handleAuthSuccess = (userData) => {
+        // I-check sa ating "database" kung banned ang user na ito
+        const existingUser = users.find(u => u.email === userData.email);
+        
+        if (existingUser && existingUser.isBanned) {
+            alert("Abe, ang account mo ay suspendido dahil sa paglabag sa aming Terms of Service.");
+            return;
+        }
+
         const role = userData.email.toLowerCase().includes('vendor') ? 'vendor' : 'client';
-        const userWithRole = {...userData, role};
+        const userWithRole = {
+            ...userData, 
+            role,
+            strikes: existingUser ? existingUser.strikes : 0,
+            isBanned: existingUser ? existingUser.isBanned : false
+        };
         setUser(userWithRole);
         localStorage.setItem('photo_user', JSON.stringify(userWithRole));
         setCurrentView('dashboard');
@@ -150,35 +278,50 @@ export default function App() {
 
     // --- RENDER LOGIC ---
 
+    const renderNotification = () => {
+        if (!notification) return null;
+        return (
+            <NotificationToast 
+                notification={notification} 
+                onClose={() => setNotification(null)} 
+            />
+        );
+    };
+
     if (user && (user.id || user.email)) {
 
-        // VENDOR VIEW (Connected to Database)
+        // VENDOR VIEW (Pinagtibay na Logic)
         if (user.role === 'vendor') {
+            // Dito natin sinisiguro na kahit ano pa ang 'currentView',
+            // basta Vendor ang naka-login, lilitaw ang VendorDashboard.
             return (
                 <>
                     <Analytics/>
+                    {renderNotification()}
                     <VendorDashboard
                         user={user}
                         onLogout={handleLogout}
-                        bookings={bookings} // PASS THE DATA
-                        onUpdateStatus={updateBookingStatus} // PASS THE CONTROL
+                        bookings={bookings}
+                        onUpdateStatus={updateBookingStatus}
+                        showNotification={showNotification}
                     />
                 </>
             );
         }
 
-        // CLIENT VIEWS
+        // CLIENT VIEWS (Keep this as is)
         if (currentView === 'vendor-profile') {
-            // Pass the first booking as sample target
             return (
                 <>
                     <Analytics/>
+                    {renderNotification()}
                     <BookingPage
                         user={user}
-                        bookingData={bookings[0]} // Pass the specific booking
+                        bookingData={bookings[0]}
                         onUpdateStatus={updateBookingStatus}
                         onRedirectToLogin={() => setCurrentView('login')}
                         onBack={() => setCurrentView('dashboard')}
+                        showNotification={showNotification}
                     />
                 </>
             );
@@ -188,12 +331,16 @@ export default function App() {
             return (
                 <>
                     <Analytics/>
+                    {renderNotification()}
                     <VendorSearchPage
+                        users={users}
+                        bookings={bookings}
                         onViewProfile={(id) => {
                             setSelectedVendorId(id);
                             setCurrentView('vendor-profile');
                         }}
                         onBack={() => setCurrentView('dashboard')}
+                        showNotification={showNotification}
                     />
                 </>
             );
@@ -202,6 +349,7 @@ export default function App() {
         return (
             <>
                 <Analytics/>
+                {renderNotification()}
                 <Dashboard
                     user={user}
                     bookings={bookings}
@@ -213,11 +361,13 @@ export default function App() {
         );
     }
 
-    // PUBLIC / GUEST VIEWS
-    if (['vendor-signup', 'vendor-search', 'vendor-profile', 'privacy-policy', 'terms-of-escrow', 'support'].includes(currentView)) {
+    // --- 4. PUBLIC / GUEST / ADMIN VIEWS ---
+    // Dito natin isinama ang 'admin-dashboard' sa listahan
+    if (['vendor-signup', 'vendor-search', 'vendor-profile', 'privacy-policy', 'terms-of-escrow', 'support', 'admin-dashboard'].includes(currentView)) {
         return (
             <>
                 <Analytics/>
+                {renderNotification()}
                 <div className="min-h-screen bg-white flex flex-col items-center font-sans selection:bg-indigo-100">
                     {/* Modern Header */}
                     <nav className="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
@@ -227,22 +377,40 @@ export default function App() {
                                 className="flex items-center gap-2 text-gray-400 hover:text-indigo-600 transition-colors group"
                             >
                                 <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
-                                <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                    {/* Kapag admin dashboard ang view, "Exit Admin" ang nakasulat */}
+                                    {currentView === 'admin-dashboard' ? 'Exit Admin' : 'Back'}
+                                </span>
                             </button>
-                            <span className="text-xl font-black text-gray-900 tracking-tighter">ABE <span
-                                className="text-indigo-600 italic">EVENTS</span></span>
+                            <span className="text-xl font-black text-gray-900 tracking-tighter uppercase">
+                                ABE <span className="text-indigo-600 italic">Events</span>
+                            </span>
                             <div className="w-16"></div>
                         </div>
                     </nav>
 
                     <div className="w-full">
                         {currentView === 'vendor-signup' && <VendorSignupForm/>}
+
+                        {/* ETO YUNG DINAGDAG NATING ADMIN VIEW */}
+                        {currentView === 'admin-dashboard' && (
+                            <AdminDashboard
+                                users={users}
+                                bookings={bookings}
+                                onUpdateStatus={updateBookingStatus}
+                            />
+                        )}
+
                         {currentView === 'vendor-search' && (
-                            <VendorSearchPage onViewProfile={() => setCurrentView('vendor-profile')}/>
+                            <VendorSearchPage 
+                                users={users} 
+                                onBack={() => setCurrentView('landing')}
+                                onViewProfile={() => setCurrentView('vendor-profile')}
+                            />
                         )}
                         {currentView === 'vendor-profile' && (
                             <BookingPage
-                                user={user} // null if guest
+                                user={user}
                                 bookingData={bookings[0]}
                                 onUpdateStatus={updateBookingStatus}
                                 onRedirectToLogin={() => setCurrentView('login')}
@@ -270,9 +438,11 @@ export default function App() {
         );
     }
 
+    // Sa loob ng App.jsx, hanapin ang LandingPage rendering part:
     return (
         <>
             <Analytics/>
+            {renderNotification()}
             <LandingPage
                 user={user}
                 onLogin={() => setCurrentView('login')}
@@ -282,6 +452,11 @@ export default function App() {
                 onPrivacyPolicy={() => setCurrentView('privacy-policy')}
                 onTermsOfEscrow={() => setCurrentView('terms-of-escrow')}
                 onSupport={() => setCurrentView('support')}
+                // ETO YUNG DAGDAG BARKADA:
+                onAdminAccess={() => {
+                    const pass = prompt("Enter Admin Code:");
+                    if(pass === "ABE2025") setCurrentView('admin-dashboard');
+                }}
             />
         </>
     );
