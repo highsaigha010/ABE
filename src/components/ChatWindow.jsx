@@ -43,15 +43,42 @@ const ChatWindow = ({ booking, currentUser, messages, onSendMessage, onAcceptCon
     useEffect(() => {
         if (chatMessages.length === 0 && booking) {
             // First time chat system message
-            onSendMessage(booking.id, 'SYSTEM', 'Welcome to ABE Chat! For your safety, always keep transactions within the platform to stay protected by our Justice System.');
+            onSendMessage(booking.id, 'SYSTEM', 'Welcome to ABE Chat! For your safety, always keep transactions within the platform to stay protected by our Justice System.', 'text');
         }
-    }, [booking?.id]);
+    }, [booking?.id, chatMessages.length]);
 
     const handleSend = (e) => {
         e.preventDefault();
         if (!inputText.trim()) return;
         onSendMessage(booking.id, currentUser.id, inputText);
         setInputText('');
+    };
+
+    const handleSendContract = () => {
+        if (!contractForm.title || !contractForm.price) return;
+        
+        const inclusionsArray = contractForm.inclusions
+            .split('\n')
+            .filter(i => i.trim() !== '');
+
+        onSendMessage(
+            booking.id, 
+            currentUser.id, 
+            contractForm.title, 
+            'contract', 
+            {
+                title: contractForm.title,
+                price: contractForm.price,
+                inclusions: inclusionsArray
+            }
+        );
+        
+        setShowContractForm(false);
+        setContractForm({
+            title: booking?.package || '',
+            price: booking?.price || '',
+            inclusions: ''
+        });
     };
 
     return (
@@ -215,7 +242,7 @@ const ChatWindow = ({ booking, currentUser, messages, onSendMessage, onAcceptCon
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest">Smart Escrow Protection</p>
                                     <p className="text-xs font-bold mt-1 leading-tight">
-                                        Abe, iwas sa off-platform deals! Manatili sa app para protektado ang bayad mo ng ating Justice System.
+                                        Abe, iwas sa off-platform deals! Manatili sa app para protektado ang bayad mo ng ating Justice System,para sa iyong proteksyon at iwas scam.
                                     </p>
                                 </div>
                             </div>

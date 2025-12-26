@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 import ChatWindow from './ChatWindow';
 
-const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp, onOpenChat, messages, sendMessage, handleAcceptContract }) => {
+const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp, onOpenChat, messages, sendMessage, handleAcceptContract, unreadCount, latestConversations }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isMsgDropdownOpen, setIsMsgDropdownOpen] = useState(false);
     const activeBooking = bookings && bookings.length > 0 ? bookings[0] : null;
 
     // Helper para sa Countdown
@@ -60,6 +61,82 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
                     </div>
 
                     <div className="hidden md:flex items-center gap-8">
+                        <div className="relative">
+                            <button 
+                                onClick={() => setIsMsgDropdownOpen(!isMsgDropdownOpen)}
+                                className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-xl hover:bg-gray-100 transition-all relative group"
+                            >
+                                💬
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Messaging Dropdown */}
+                            {isMsgDropdownOpen && (
+                                <div className="absolute top-full right-0 mt-4 w-80 bg-white rounded-3xl shadow-2xl border border-gray-100 py-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                                    <div className="px-6 mb-4 flex justify-between items-center">
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Recent Messages</h4>
+                                        <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{unreadCount} New</span>
+                                    </div>
+                                    
+                                    <div className="max-h-96 overflow-y-auto px-2">
+                                        {latestConversations.length > 0 ? latestConversations.map((conv, idx) => {
+                                            const isContract = conv.lastMessage.type === 'contract';
+                                            return (
+                                                <button 
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        onOpenChat(conv.bookingId);
+                                                        setIsChatOpen(true);
+                                                        setIsMsgDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full flex gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-all text-left group mb-1 ${isContract ? 'bg-indigo-50/50 border border-indigo-100' : ''}`}
+                                                >
+                                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-lg shrink-0 border border-gray-100">
+                                                        {isContract ? '📜' : '👤'}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-start mb-0.5">
+                                                            <p className="text-sm font-black text-gray-900 truncate tracking-tight uppercase italic">{conv.senderName}</p>
+                                                            <span className="text-[8px] font-bold text-gray-400 shrink-0">{conv.lastMessage.timestamp}</span>
+                                                        </div>
+                                                        <p className={`text-xs truncate ${conv.lastMessage.isRead ? 'text-gray-400 font-medium' : 'text-gray-900 font-bold'}`}>
+                                                            {isContract ? `Contract: ${conv.lastMessage.text}` : conv.lastMessage.text}
+                                                        </p>
+                                                        {isContract && (
+                                                            <span className="inline-block mt-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-black uppercase tracking-widest rounded-full">Action Required</span>
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            );
+                                        }) : (
+                                            <div className="py-10 text-center">
+                                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No messages yet Abe</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="px-6 mt-4 pt-4 border-t border-gray-50">
+                                        <button 
+                                            onClick={() => {
+                                                if (activeBooking) {
+                                                    onOpenChat(activeBooking.id);
+                                                    setIsChatOpen(true);
+                                                    setIsMsgDropdownOpen(false);
+                                                }
+                                            }}
+                                            className="w-full text-center text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-gray-900 transition-colors"
+                                        >
+                                            View All Messages →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                             Member <span className="text-gray-900 ml-2">{user?.name || 'Guest'}</span>
                         </span>
@@ -81,20 +158,64 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
                         )}
                     </div>
 
-                    {/* Mobile Menu Toggle */}
-                    <button 
-                        className="md:hidden p-2 text-gray-900 focus:outline-none"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {isMenuOpen ? (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                            )}
-                        </svg>
-                    </button>
-                </div>
+                        {/* Mobile Menu Toggle */}
+                        <div className="flex items-center gap-4 md:hidden">
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setIsMsgDropdownOpen(!isMsgDropdownOpen)}
+                                    className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-lg hover:bg-gray-100 transition-all relative"
+                                >
+                                    💬
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                </button>
+                                {isMsgDropdownOpen && (
+                                    <div className="absolute top-full right-0 mt-4 w-[280px] bg-white rounded-3xl shadow-2xl border border-gray-100 py-6 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <div className="px-6 mb-4 flex justify-between items-center">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Messages</h4>
+                                            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{unreadCount}</span>
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto px-2">
+                                            {latestConversations.length > 0 ? latestConversations.map((conv, idx) => (
+                                                <button 
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        onOpenChat(conv.bookingId);
+                                                        setIsChatOpen(true);
+                                                        setIsMsgDropdownOpen(false);
+                                                    }}
+                                                    className="w-full flex gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all text-left mb-1"
+                                                >
+                                                    <div className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center text-sm shrink-0 border border-gray-100">👤</div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[10px] font-black text-gray-900 truncate uppercase">{conv.senderName}</p>
+                                                        <p className="text-[10px] text-gray-400 truncate">{conv.lastMessage.text}</p>
+                                                    </div>
+                                                </button>
+                                            )) : (
+                                                <p className="text-center py-4 text-[10px] font-black text-gray-300 uppercase">Walang Messages</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <button 
+                                className="p-2 text-gray-900 focus:outline-none"
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    {isMenuOpen ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                                    )}
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
                 {/* Mobile Menu Overlay */}
                 {isMenuOpen && (

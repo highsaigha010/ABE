@@ -14,9 +14,11 @@ import LegalPage from "./components/LegalPage";
 import NotificationToast from "./components/NotificationToast";
 import ChatWindow from "./components/ChatWindow";
 import {Analytics} from '@vercel/analytics/react';
+import { saveToAbeStore, loadFromAbeStore } from './utils/AbeStore';
 
 export default function App() {
     // --- 1. SECURITY & ACCESS STATES ---
+    const [user, setUser] = useState(null);
     const [hasAccess, setHasAccess] = useState(false);
     const [accessCode, setAccessCode] = useState('');
     const CORRECT_CODE = "ABE2025";
@@ -29,6 +31,146 @@ export default function App() {
     const [isAdminVerified, setIsAdminVerified] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [activeChatBookingId, setActiveChatBookingId] = useState(null);
+    const [currentView, setCurrentView] = useState('landing');
+    const [selectedVendorId, setSelectedVendorId] = useState(null);
+    const [notification, setNotification] = useState(null);
+
+    // --- 1. THE SHARED DATABASE (Mock Data) ---
+    const initialData = loadFromAbeStore() || {
+        users: [
+            { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false, balance: 0 },
+            { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 150000 },
+            { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false, balance: 0 },
+            { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false, balance: 75000 },
+            { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true, balance: 0 },
+        ],
+        bookings: [
+            {
+                id: 'txn-001',
+                clientName: 'Jennie Rose',
+                vendorName: 'Reggie Photography',
+                date: 'Dec 25, 2025',
+                package: 'Essential Experience',
+                price: 50245,
+                status: 'unpaid',
+                city: 'Angeles',
+                lat: 15.1441,
+                lng: 120.5887,
+                disputeReason: '',
+                disputeEvidence: null,
+                vendorAppeal: ''
+            },
+            {
+                id: 'txn-002',
+                clientName: 'Juan Dela Cruz',
+                vendorName: 'Mabalacat Bridal Cars',
+                date: 'Dec 20, 2025',
+                package: 'Luxury Ride',
+                price: 15000,
+                status: 'disputed',
+                city: 'San Fernando',
+                lat: 15.0286,
+                lng: 120.6898,
+                disputeCategory: 'Late Arrival',
+                disputeReason: 'Abe, halos dalawang oras silang late sa venue. Muntik na kaming hindi makarating sa simbahan.',
+                disputeEvidence: 'https://images.unsplash.com/photo-1501747315-124a0eaca060?auto=format&fit=crop&q=80&w=300',
+                vendorAppeal: 'Nagkaroon po ng hindi inaasahang heavy traffic sa San Fernando dahil sa parada.'
+            },
+            {
+                id: 'txn-003',
+                clientName: 'Cabalen Galing',
+                vendorName: 'Reggie Photography',
+                date: 'Dec 28, 2025',
+                package: 'Premium Pack',
+                price: 75000,
+                status: 'released',
+                city: 'Clark',
+                lat: 15.1794,
+                lng: 120.5275,
+            },
+            {
+                id: 'txn-004',
+                clientName: 'Maria Clara',
+                vendorName: 'Mabalacat Bridal Cars',
+                date: 'Dec 30, 2025',
+                package: 'Standard',
+                price: 25000,
+                status: 'paid',
+                city: 'Mabalacat',
+                lat: 15.2215,
+                lng: 120.5732,
+            },
+            {
+                id: 'txn-005',
+                clientName: 'Jose Rizal',
+                vendorName: 'Reggie Photography',
+                date: 'Dec 15, 2025',
+                package: 'Essential',
+                price: 45000,
+                status: 'released',
+                city: 'San Fernando',
+                lat: 15.0348,
+                lng: 120.6814,
+            }
+        ],
+        payoutRequests: [
+            {
+                id: 'payout-001',
+                vendorId: 'usr-002',
+                vendorName: 'Reggie Photography',
+                amount: 5000,
+                bankName: 'GCash',
+                accountNumber: '09123456789',
+                status: 'pending_withdrawal',
+                date: 'Dec 26, 2025'
+            }
+        ],
+        verificationRequests: [
+            {
+                id: 'verify-001',
+                businessName: 'Reggie Photography',
+                files: {
+                    dti: 'dti_reggie_2025.pdf',
+                    permit: 'permit_angeles_2025.pdf',
+                    id: 'id_reggie_back.jpg'
+                },
+                paymentInfo: {
+                    bankName: 'GCash',
+                    accountNumber: '09123456789'
+                },
+                status: 'pending_verification',
+                date: 'Dec 26, 2025'
+            }
+        ],
+        messages: [
+            {
+                id: 'msg-001',
+                bookingId: 'txn-001',
+                senderId: 'usr-002', // Reggie
+                senderRole: 'VENDOR',
+                text: "Hello Abe! Ready na ako para sa event mo sa Dec 25. Gusto mo na bang i-send ko ang contract quote?",
+                timestamp: new Date().toLocaleTimeString(),
+                isRead: true,
+                type: 'text'
+            }
+        ]
+    };
+
+    const [users, setUsers] = useState(initialData.users);
+    const [bookings, setBookings] = useState(initialData.bookings);
+    const [payoutRequests, setPayoutRequests] = useState(initialData.payoutRequests);
+    const [verificationRequests, setVerificationRequests] = useState(initialData.verificationRequests);
+
+    // --- PERSISTENCE EFFECT ---
+    useEffect(() => {
+        saveToAbeStore({
+            users,
+            bookings,
+            payoutRequests,
+            verificationRequests,
+            messages
+        });
+    }, [users, bookings, payoutRequests, verificationRequests, messages]);
 
     // 2. I-check kung naka-login na sa Access Gate o User session dati
     useEffect(() => {
@@ -65,59 +207,52 @@ export default function App() {
     };
 
 
-    // --- OTHER STATES ---
-    const [user, setUser] = useState(null);
-    const [currentView, setCurrentView] = useState('landing');
-    const [selectedVendorId, setSelectedVendorId] = useState(null);
-    const [notification, setNotification] = useState(null);
-    const [payoutRequests, setPayoutRequests] = useState([
-        {
-            id: 'payout-001',
-            vendorId: 'usr-002',
-            vendorName: 'Reggie Photography',
-            amount: 5000,
-            bankName: 'GCash',
-            accountNumber: '09123456789',
-            status: 'pending_withdrawal',
-            date: 'Dec 26, 2025'
-        }
-    ]);
-
-    const [verificationRequests, setVerificationRequests] = useState([
-        {
-            id: 'verify-001',
-            businessName: 'Reggie Photography',
-            files: {
-                dti: 'dti_reggie_2025.pdf',
-                permit: 'permit_angeles_2025.pdf',
-                id: 'id_reggie_back.jpg'
-            },
-            paymentInfo: {
-                bankName: 'GCash',
-                accountNumber: '09123456789'
-            },
-            status: 'pending_verification',
-            date: 'Dec 26, 2025'
-        }
-    ]);
-
     // --- MESSAGING SYSTEM STATE ---
-    const [messages, setMessages] = useState([
-        {
-            id: 'msg-001',
-            bookingId: 'txn-001',
-            senderId: 'usr-002', // Reggie
-            text: "Hello Abe! Ready na ako para sa event mo sa Dec 25. Gusto mo na bang i-send ko ang contract quote?",
-            timestamp: new Date().toLocaleTimeString(),
-            isRead: true,
-            type: 'text'
-        }
-    ]);
+    const [messages, setMessages] = useState(initialData.messages);
 
     const playPopSound = () => {
         const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/descent/bomb.mp3'); // Mock pop sound
         audio.play().catch(e => console.log("Audio play failed:", e));
     };
+
+    const playPingSound = () => {
+        const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/descent/CrumbleSound.mp3'); // Mock ping sound
+        audio.play().catch(e => console.log("Audio play failed:", e));
+    };
+
+    // Calculate Unread Messages and Latest Conversations
+    const getUnreadCount = () => messages.filter(m => !m.isRead && m.senderId !== user?.id && m.senderId !== 'SYSTEM').length;
+    const unreadCount = getUnreadCount();
+    
+    useEffect(() => {
+        if (unreadCount > 0) {
+            playPingSound();
+        }
+    }, [unreadCount]);
+
+    const getLatestConversations = () => {
+        const conversationMap = {};
+        
+        // Sort messages by timestamp descending
+        const sortedMessages = [...messages].reverse();
+        
+        sortedMessages.forEach(msg => {
+            if (!conversationMap[msg.bookingId]) {
+                const booking = bookings.find(b => b.id === msg.bookingId);
+                if (booking) {
+                    conversationMap[msg.bookingId] = {
+                        bookingId: msg.bookingId,
+                        lastMessage: msg,
+                        senderName: user?.role === 'VENDOR' ? booking.clientName : booking.vendorName,
+                    };
+                }
+            }
+        });
+        
+        return Object.values(conversationMap).slice(0, 5); // Latest 5
+    };
+
+    const latestConversations = getLatestConversations();
 
     const sendMessage = (bookingId, senderId, text, type = 'text', contractData = null) => {
         const RESTRICTED_KEYWORDS = ['labas', 'personal account', 'direct payment', 'gcash','outside','transfer', 'paymaya', 'number', 'contact', 'whatsapp', 'viber', 'telegram', 'messenger', 'fb', 'facebook'];
@@ -132,6 +267,7 @@ export default function App() {
             id: `msg-${Date.now()}`,
             bookingId,
             senderId,
+            senderRole: user?.role || 'CLIENT', // Database-like structure
             text,
             type,
             contractData,
@@ -176,87 +312,6 @@ export default function App() {
             audio.play().catch(e => console.log("Audio play failed:", e));
         }
     };
-
-    // --- 1. THE SHARED DATABASE (Mock Data) ---
-    // Dagdagan natin ng Users Database para sa Security System
-    const [users, setUsers] = useState([
-        { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false, balance: 0 },
-        { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 150000 },
-        { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false, balance: 0 },
-        { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false, balance: 75000 },
-        { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true, balance: 0 },
-    ]);
-
-    // Ito ang "Single Source of Truth". Konektado dito si Client at Vendor.
-    const [bookings, setBookings] = useState([
-        {
-            id: 'txn-001',
-            clientName: 'Jennie Rose',
-            vendorName: 'Reggie Photography',
-            date: 'Dec 25, 2025',
-            package: 'Essential Experience',
-            price: 50245,
-            status: 'unpaid',
-            city: 'Angeles',
-            lat: 15.1441,
-            lng: 120.5887,
-            disputeReason: '',
-            disputeEvidence: null,
-            vendorAppeal: ''
-        },
-        {
-            id: 'txn-002',
-            clientName: 'Juan Dela Cruz',
-            vendorName: 'Mabalacat Bridal Cars',
-            date: 'Dec 20, 2025',
-            package: 'Luxury Ride',
-            price: 15000,
-            status: 'disputed',
-            city: 'San Fernando',
-            lat: 15.0286,
-            lng: 120.6898,
-            disputeCategory: 'Late Arrival',
-            disputeReason: 'Abe, halos dalawang oras silang late sa venue. Muntik na kaming hindi makarating sa simbahan.',
-            disputeEvidence: 'https://images.unsplash.com/photo-1501747315-124a0eaca060?auto=format&fit=crop&q=80&w=300',
-            vendorAppeal: 'Nagkaroon po ng hindi inaasahang heavy traffic sa San Fernando dahil sa parada.'
-        },
-        {
-            id: 'txn-003',
-            clientName: 'Cabalen Galing',
-            vendorName: 'Reggie Photography',
-            date: 'Dec 28, 2025',
-            package: 'Premium Pack',
-            price: 75000,
-            status: 'released',
-            city: 'Clark',
-            lat: 15.1794,
-            lng: 120.5275,
-        },
-        {
-            id: 'txn-004',
-            clientName: 'Maria Clara',
-            vendorName: 'Mabalacat Bridal Cars',
-            date: 'Dec 30, 2025',
-            package: 'Standard',
-            price: 25000,
-            status: 'paid',
-            city: 'Mabalacat',
-            lat: 15.2215,
-            lng: 120.5732,
-        },
-        {
-            id: 'txn-005',
-            clientName: 'Jose Rizal',
-            vendorName: 'Reggie Photography',
-            date: 'Dec 15, 2025',
-            package: 'Essential',
-            price: 45000,
-            status: 'released',
-            city: 'San Fernando',
-            lat: 15.0348,
-            lng: 120.6814,
-        }
-    ]);
 
     // Function para ma-update ang status (gagamitin ni BookingPage at VendorDashboard)
     const updateBookingStatus = async (bookingId, action, extraData = {}) => {
@@ -568,116 +623,121 @@ export default function App() {
                     {renderNotification()}
                     {renderChat()}
                     <VendorDashboard
-                        user={user}
-                        onLogout={handleLogout}
-                        bookings={bookings}
-                        onUpdateStatus={updateBookingStatus}
-                        showNotification={showNotification}
-                        payoutRequests={payoutRequests}
-                        onAddPayoutRequest={(req) => setPayoutRequests(prev => [req, ...prev])}
-                        showInstallButton={!!deferredPrompt}
-                        onInstallApp={handleInstallApp}
-                        onOpenChat={(id) => setActiveChatBookingId(id)}
-                    />
-                </>
-            );
+                            user={user}
+                            onLogout={handleLogout}
+                            bookings={bookings}
+                            onUpdateStatus={updateBookingStatus}
+                            showNotification={showNotification}
+                            payoutRequests={payoutRequests}
+                            onAddPayoutRequest={(req) => setPayoutRequests(prev => [req, ...prev])}
+                            showInstallButton={!!deferredPrompt}
+                            onInstallApp={handleInstallApp}
+                            onOpenChat={(id) => setActiveChatBookingId(id)}
+                            unreadCount={unreadCount}
+                            latestConversations={latestConversations}
+                            messages={messages}
+                        />
+                    </>
+                );
+            }
+
+            // ADMIN VIEW
+            if (user.role === 'ADMIN' || currentView === 'admin-dashboard') {
+                 // Re-verify if trying to access admin dashboard
+                 if (user.role !== 'ADMIN') {
+                     alert('Abe, Restricted Area ito!');
+                     setCurrentView('dashboard');
+                 } else {
+                    return (
+                        <>
+                            <Analytics/>
+                            {renderNotification()}
+                            <div className="min-h-screen bg-white flex flex-col items-center font-sans">
+                                <nav className="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
+                                    <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                                        <button onClick={handleLogout} className="text-xs font-black uppercase tracking-widest text-red-500">Log Out</button>
+                                        <span className="text-xl font-black text-gray-900 uppercase">ABE <span className="text-indigo-600 italic">Admin</span></span>
+                                        <div className="w-16"></div>
+                                    </div>
+                                </nav>
+                                <AdminDashboard 
+                                    users={users} 
+                                    bookings={bookings} 
+                                    onUpdateStatus={updateBookingStatus}
+                                    isVerified={isAdminVerified}
+                                    payoutRequests={payoutRequests}
+                                    setPayoutRequests={setPayoutRequests}
+                                    verificationRequests={verificationRequests}
+                                    setVerificationRequests={setVerificationRequests}
+                                    showNotification={showNotification}
+                                    onPayoutAction={executePayoutAction}
+                                    messages={messages}
+                                />
+                        </div>
+                    </>
+                );
+             }
         }
 
-        // ADMIN VIEW
-        if (user.role === 'ADMIN' || currentView === 'admin-dashboard') {
-             // Re-verify if trying to access admin dashboard
-             if (user.role !== 'ADMIN') {
-                 alert('Abe, Restricted Area ito!');
-                 setCurrentView('dashboard');
-             } else {
+            // CLIENT VIEWS (Keep this as is)
+            if (currentView === 'vendor-profile') {
                 return (
                     <>
                         <Analytics/>
                         {renderNotification()}
-                        <div className="min-h-screen bg-white flex flex-col items-center font-sans">
-                            <nav className="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
-                                <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-                                    <button onClick={handleLogout} className="text-xs font-black uppercase tracking-widest text-red-500">Log Out</button>
-                                    <span className="text-xl font-black text-gray-900 uppercase">ABE <span className="text-indigo-600 italic">Admin</span></span>
-                                    <div className="w-16"></div>
-                                </div>
-                            </nav>
-                            <AdminDashboard 
-                                users={users} 
-                                bookings={bookings} 
-                                onUpdateStatus={updateBookingStatus}
-                                isVerified={isAdminVerified}
-                                payoutRequests={payoutRequests}
-                                setPayoutRequests={setPayoutRequests}
-                                verificationRequests={verificationRequests}
-                                setVerificationRequests={setVerificationRequests}
-                                showNotification={showNotification}
-                                onPayoutAction={executePayoutAction}
-                                messages={messages}
-                            />
-                    </div>
-                </>
-            );
-         }
-    }
+                        <BookingPage
+                            user={user}
+                            bookingData={bookings[0]}
+                            onUpdateStatus={updateBookingStatus}
+                            onRedirectToLogin={() => setCurrentView('login')}
+                            onBack={() => setCurrentView('dashboard')}
+                            showNotification={showNotification}
+                        />
+                    </>
+                );
+            }
 
-        // CLIENT VIEWS (Keep this as is)
-        if (currentView === 'vendor-profile') {
+            if (currentView === 'vendor-search') {
+                return (
+                    <>
+                        <Analytics/>
+                        {renderNotification()}
+                        <VendorSearchPage
+                            users={users}
+                            bookings={bookings}
+                            onViewProfile={(id) => {
+                                setSelectedVendorId(id);
+                                setCurrentView('vendor-profile');
+                            }}
+                            onBack={() => setCurrentView('dashboard')}
+                            showNotification={showNotification}
+                        />
+                    </>
+                );
+            }
+
             return (
                 <>
                     <Analytics/>
                     {renderNotification()}
-                    <BookingPage
+                    <Dashboard
                         user={user}
-                        bookingData={bookings[0]}
-                        onUpdateStatus={updateBookingStatus}
-                        onRedirectToLogin={() => setCurrentView('login')}
-                        onBack={() => setCurrentView('dashboard')}
-                        showNotification={showNotification}
-                    />
-                </>
-            );
-        }
-
-        if (currentView === 'vendor-search') {
-            return (
-                <>
-                    <Analytics/>
-                    {renderNotification()}
-                    <VendorSearchPage
-                        users={users}
                         bookings={bookings}
-                        onViewProfile={(id) => {
-                            setSelectedVendorId(id);
-                            setCurrentView('vendor-profile');
-                        }}
-                        onBack={() => setCurrentView('dashboard')}
-                        showNotification={showNotification}
+                        onLogout={handleLogout}
+                        onFindSuppliers={() => setCurrentView('vendor-search')}
+                        onViewBooking={() => setCurrentView('vendor-profile')}
+                        showInstallButton={!!deferredPrompt}
+                        onInstallApp={handleInstallApp}
+                        onOpenChat={(id) => setActiveChatBookingId(id)}
+                        messages={messages}
+                        sendMessage={sendMessage}
+                        handleAcceptContract={handleAcceptContract}
+                        unreadCount={unreadCount}
+                        latestConversations={latestConversations}
                     />
                 </>
             );
         }
-
-        return (
-            <>
-                <Analytics/>
-                {renderNotification()}
-                <Dashboard
-                    user={user}
-                    bookings={bookings}
-                    onLogout={handleLogout}
-                    onFindSuppliers={() => setCurrentView('vendor-search')}
-                    onViewBooking={() => setCurrentView('vendor-profile')}
-                    showInstallButton={!!deferredPrompt}
-                    onInstallApp={handleInstallApp}
-                    onOpenChat={(id) => setActiveChatBookingId(id)}
-                    messages={messages}
-                    sendMessage={sendMessage}
-                    handleAcceptContract={handleAcceptContract}
-                />
-            </>
-        );
-    }
 
     // --- 4. PUBLIC / GUEST / ADMIN VIEWS ---
     // Dito natin isinama ang 'admin-dashboard' sa listahan
