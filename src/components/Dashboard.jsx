@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
+import ChatWindow from './ChatWindow';
 
-const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp, onOpenChat }) => {
+const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp, onOpenChat, messages, sendMessage, handleAcceptContract }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const activeBooking = bookings && bookings.length > 0 ? bookings[0] : null;
 
     // Helper para sa Countdown
@@ -20,12 +22,22 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
         const total = booking.price;
         const isPaidInEscrow = ['paid', 'partially_released', 'completed', 'released'].includes(booking.status);
         const paid = isPaidInEscrow ? total : 0;
-        const remaining = isPaidInEscrow ? 0 : total;
-        const percent = (paid / total) * 100;
+        const remaining = isPaidInEscrow ? total - paid : total;
+        const percent = total > 0 ? (paid / total) * 100 : 0;
         return { total, paid, remaining, percent };
     };
 
     const budget = getBudgetStats(activeBooking);
+
+    // Helper para sa Timeline Step
+    const getTimelineStep = (status) => {
+        if (['released', 'refunded', 'split'].includes(status)) return 4;
+        if (status === 'completed') return 3;
+        if (['paid', 'partially_released'].includes(status)) return 2;
+        return 1; // Booked / Unpaid
+    };
+
+    const currentStep = activeBooking ? getTimelineStep(activeBooking.status) : 0;
 
     // Mock Categories para mukhang buhay ang app
     const categories = [
@@ -129,6 +141,18 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
             {/* --- MAIN CONTENT --- */}
             <div className="max-w-6xl mx-auto px-6 -mt-16 pb-24 relative z-20">
 
+                {/* Conditional Chat Window Rendering */}
+                {isChatOpen && activeBooking && (
+                    <ChatWindow 
+                        booking={activeBooking}
+                        currentUser={user}
+                        messages={messages || []}
+                        onSendMessage={sendMessage}
+                        onAcceptContract={handleAcceptContract}
+                        onClose={() => setIsChatOpen(false)}
+                    />
+                )}
+
                 {/* EVENT TIMELINE & BUDGET TRACKER */}
                 {activeBooking && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
@@ -150,21 +174,34 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
                                 <div className="relative">
                                     {/* Horizontal Line */}
                                     <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-100 -z-10"></div>
+                                    <div 
+                                        className="absolute top-5 left-0 h-0.5 bg-indigo-600 -z-10 transition-all duration-1000"
+                                        style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
+                                    ></div>
                                     
                                     <div className="flex justify-between">
                                         {[
-                                            { label: 'Booked', status: ['unpaid', 'paid', 'partially_released', 'completed', 'released'], icon: '📝' },
-                                            { label: 'Escrow Paid', status: ['paid', 'partially_released', 'completed', 'released'], icon: '🔒' },
-                                            { label: 'Event Day', status: ['partially_released', 'completed', 'released'], icon: '🎉' },
-                                            { label: 'Final Release', status: ['released'], icon: '💰' }
+                                            { label: 'Booked', icon: '📝' },
+                                            { label: 'Escrow Paid', icon: '🔒' },
+                                            { label: 'Event Day', icon: '🎉' },
+                                            { label: 'Final Release', icon: '✨' }
                                         ].map((step, idx) => {
-                                            const isActive = step.status.includes(activeBooking.status);
+                                            const stepNum = idx + 1;
+                                            const isCompleted = currentStep > stepNum;
+                                            const isActive = currentStep === stepNum;
+                                            
                                             return (
                                                 <div key={idx} className="flex flex-col items-center gap-4 text-center">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all shadow-lg ${isActive ? 'bg-indigo-600 text-white scale-110 shadow-indigo-200' : 'bg-white text-gray-300 border-2 border-gray-50'}`}>
-                                                        {isActive ? step.icon : '•'}
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm transition-all duration-500 shadow-lg ${
+                                                        isCompleted ? 'bg-indigo-600 text-white' : 
+                                                        isActive ? 'bg-indigo-50 text-indigo-600 border-2 border-indigo-600 ring-4 ring-indigo-50 scale-110' : 
+                                                        'bg-white text-gray-300 border-2 border-gray-50'
+                                                    }`}>
+                                                        {isCompleted ? '✓' : step.icon}
                                                     </div>
-                                                    <span className={`text-[9px] font-black uppercase tracking-tighter max-w-[60px] ${isActive ? 'text-gray-900' : 'text-gray-300'}`}>
+                                                    <span className={`text-[9px] font-black uppercase tracking-tighter max-w-[60px] transition-colors ${
+                                                        isCompleted || isActive ? 'text-gray-900' : 'text-gray-300'
+                                                    }`}>
                                                         {step.label}
                                                     </span>
                                                 </div>
@@ -215,10 +252,16 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
                                     View Billing
                                 </button>
                                 <button 
-                                    onClick={() => onOpenChat(activeBooking.id)}
-                                    className="flex-1 py-4 bg-white text-gray-900 border border-gray-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 transition-all flex items-center justify-center gap-2"
+                                    onClick={() => {
+                                        if (activeBooking) {
+                                            onOpenChat(activeBooking.id);
+                                            setIsChatOpen(true);
+                                        }
+                                    }}
+                                    className="flex-1 py-4 bg-white text-gray-900 border border-gray-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 transition-all flex items-center justify-center gap-2 group active:scale-95"
                                 >
-                                    <span>💬 Message Supplier</span>
+                                    <span className="group-hover:rotate-12 transition-transform">💬</span>
+                                    <span>Message Supplier</span>
                                 </button>
                             </div>
                         </div>

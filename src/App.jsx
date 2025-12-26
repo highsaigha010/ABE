@@ -120,6 +120,14 @@ export default function App() {
     };
 
     const sendMessage = (bookingId, senderId, text, type = 'text', contractData = null) => {
+        const RESTRICTED_KEYWORDS = ['labas', 'personal account', 'direct payment', 'gcash', 'paymaya', 'number', 'contact', 'whatsapp', 'viber', 'telegram', 'messenger', 'fb', 'facebook'];
+        const PHONE_REGEX = /(\+?\d{1,4}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g;
+        
+        const lowerText = text.toLowerCase();
+        const hasKeyword = RESTRICTED_KEYWORDS.some(word => lowerText.includes(word));
+        const hasPhone = PHONE_REGEX.test(lowerText);
+        const isFlagged = hasKeyword || hasPhone;
+
         const newMessage = {
             id: `msg-${Date.now()}`,
             bookingId,
@@ -128,17 +136,26 @@ export default function App() {
             type,
             contractData,
             timestamp: new Date().toLocaleTimeString(),
-            isRead: false
+            isRead: false,
+            isFlagged: isFlagged
         };
         setMessages(prev => [...prev, newMessage]);
-        if (senderId !== user?.id) {
+        
+        if (isFlagged) {
+            console.warn(`ABE SECURITY ALERT: Message flagged in booking ${bookingId}`);
+            // Dito pwede nating dagdagan ng Admin Notification logic sa future
+        }
+
+        if (senderId !== user?.id && senderId !== 'SYSTEM') {
             playPopSound();
         }
     };
 
     const handleAcceptContract = (bookingId, price) => {
         updateBookingStatus(bookingId, 'PAY');
-        showNotification(`Contract Accepted! ₱${price.toLocaleString()} secured in Smart Escrow. Ching!`, "success");
+        showNotification(`Contract Accepted! ₱${parseFloat(price).toLocaleString()} secured in Smart Escrow. Ching!`, "success");
+        // Awtomatikong isara ang chat pagkatapos ng success payment (opsyonal, pero para sa UX)
+        // setActiveChatBookingId(null); 
     };
 
     // Handle verification request globally
@@ -515,6 +532,10 @@ export default function App() {
     };
 
     const renderChat = () => {
+        // Ang Dashboard ay may sarili nang internal ChatWindow logic para sa Client
+        // Pero para sa Vendor view, gagamit pa rin tayo ng global renderChat
+        if (user?.role === 'CLIENT' && currentView === 'dashboard') return null;
+
         if (!activeChatBookingId || !user) return null;
         const booking = bookings.find(b => b.id === activeChatBookingId);
         if (!booking) return null;
@@ -527,6 +548,7 @@ export default function App() {
                 onSendMessage={sendMessage}
                 onAcceptContract={handleAcceptContract}
                 onClose={() => setActiveChatBookingId(null)}
+                className="z-50"
             />
         );
     };
@@ -649,6 +671,9 @@ export default function App() {
                     showInstallButton={!!deferredPrompt}
                     onInstallApp={handleInstallApp}
                     onOpenChat={(id) => setActiveChatBookingId(id)}
+                    messages={messages}
+                    sendMessage={sendMessage}
+                    handleAcceptContract={handleAcceptContract}
                 />
             </>
         );
