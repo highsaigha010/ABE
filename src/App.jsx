@@ -120,7 +120,7 @@ export default function App() {
     };
 
     const sendMessage = (bookingId, senderId, text, type = 'text', contractData = null) => {
-        const RESTRICTED_KEYWORDS = ['labas', 'personal account', 'direct payment', 'gcash', 'paymaya', 'number', 'contact', 'whatsapp', 'viber', 'telegram', 'messenger', 'fb', 'facebook'];
+        const RESTRICTED_KEYWORDS = ['labas', 'personal account', 'direct payment', 'gcash','outside','transfer', 'paymaya', 'number', 'contact', 'whatsapp', 'viber', 'telegram', 'messenger', 'fb', 'facebook'];
         const PHONE_REGEX = /(\+?\d{1,4}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g;
         
         const lowerText = text.toLowerCase();
