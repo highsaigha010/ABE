@@ -12,14 +12,23 @@ const PAMPANGA_GEO_URL = "https://raw.githubusercontent.com/deldersveld/topojson
 const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction }) => {
     const [activeTab, setActiveTab] = useState('verification'); // 'verification', 'vendors', 'bookings', 'analytics', or 'payouts'
     const [confirmModal, setConfirmModal] = useState({ show: false, targetId: null, action: null, label: '', data: null });
-    const [rejectionModal, setRejectionModal] = useState({ show: false, targetId: null, reason: '' });
+    const [rejectionModal, setRejectionModal] = useState({ show: false, targetId: null, reason: '', feedback: '' });
     const rejectionReasons = [
         'Expired Permit',
         'Name Mismatch (ID vs Bank)',
         'Blurred Image/Documents',
         'Invalid DTI Registration',
-        'Selfie Mismatch'
+        'Selfie Mismatch',
+        'Other (See Feedback)'
     ];
+    const [previewModal, setPreviewModal] = useState({ show: false, file: null, type: null, requestId: null, label: '' });
+    const [zoom, setZoom] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [checklist, setChecklist] = useState({
+        nameMatch: false,
+        expiryValid: false,
+        clearDoc: false
+    });
     const [expandedBookingId, setExpandedBookingId] = useState(null);
     const [tooltipContent, setTooltipContent] = useState(null);
     const [hoveredBookingId, setHoveredBookingId] = useState(null);
@@ -117,15 +126,126 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] font-sans relative">
+            {/* Document Preview Modal */}
+            {previewModal.show && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-10">
+                    <div className="absolute inset-0 bg-gray-950/90 backdrop-blur-xl" onClick={() => setPreviewModal({ ...previewModal, show: false })}></div>
+                    
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-6xl h-full max-h-[90vh] relative shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20">
+                        {/* Left Side: Viewer */}
+                        <div className="flex-1 bg-gray-100 relative flex items-center justify-center overflow-hidden border-r border-gray-100">
+                            <div className="absolute top-6 left-6 z-10 flex gap-2">
+                                <button onClick={() => setZoom(prev => Math.min(prev + 0.2, 3))} className="w-10 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm flex items-center justify-center text-lg hover:bg-white transition-all">➕</button>
+                                <button onClick={() => setZoom(prev => Math.max(prev - 0.2, 0.5))} className="w-10 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm flex items-center justify-center text-lg hover:bg-white transition-all">➖</button>
+                                <button onClick={() => setRotation(prev => prev + 90)} className="w-10 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm flex items-center justify-center text-lg hover:bg-white transition-all">🔄</button>
+                                <button onClick={() => { setZoom(1); setRotation(0); }} className="px-4 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm flex items-center justify-center text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all">Reset</button>
+                            </div>
+
+                            <div 
+                                className="transition-transform duration-200 ease-out"
+                                style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
+                            >
+                                {previewModal.file?.toLowerCase().endsWith('.pdf') ? (
+                                    <div className="w-[800px] h-[600px] bg-white shadow-2xl flex items-center justify-center">
+                                        <iframe 
+                                            src={`/mock-docs/${previewModal.file}`} 
+                                            className="w-full h-full border-none"
+                                            title="PDF Preview"
+                                        ></iframe>
+                                    </div>
+                                ) : (
+                                    <img 
+                                        src={previewModal.file?.startsWith('http') ? previewModal.file : `https://placehold.co/800x1200/4f46e5/white?text=${previewModal.label}`} 
+                                        alt="Document Preview" 
+                                        className="max-h-[80vh] shadow-2xl rounded-lg"
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right Side: Checklist & Decisions */}
+                        <div className="w-full md:w-80 bg-white p-8 flex flex-col">
+                            <div className="mb-8">
+                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic mb-1">Inspection</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{previewModal.label}</p>
+                            </div>
+
+                            <div className="space-y-6 flex-1">
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Review Checklist</p>
+                                    
+                                    <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors group">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={checklist.nameMatch}
+                                            onChange={() => setChecklist(prev => ({ ...prev, nameMatch: !prev.nameMatch }))}
+                                            className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight group-hover:text-indigo-900">Name matches ID?</span>
+                                    </label>
+
+                                    <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors group">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={checklist.expiryValid}
+                                            onChange={() => setChecklist(prev => ({ ...prev, expiryValid: !prev.expiryValid }))}
+                                            className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight group-hover:text-indigo-900">Expiry date is valid?</span>
+                                    </label>
+
+                                    <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors group">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={checklist.clearDoc}
+                                            onChange={() => setChecklist(prev => ({ ...prev, clearDoc: !prev.clearDoc }))}
+                                            className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight group-hover:text-indigo-900">Clear & Not Edited?</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="pt-8 border-t border-gray-100 space-y-3">
+                                <button 
+                                    onClick={() => {
+                                        showNotification(`${previewModal.label} Verified!`, "success");
+                                        setPreviewModal({ ...previewModal, show: false });
+                                    }}
+                                    className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                                >
+                                    Approve Document
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        showNotification(`${previewModal.label} Flagged as Suspicious!`, "error");
+                                        setPreviewModal({ ...previewModal, show: false });
+                                    }}
+                                    className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-100 transition-all"
+                                >
+                                    Flag as Suspicious
+                                </button>
+                                <button 
+                                    onClick={() => setPreviewModal({ ...previewModal, show: false })}
+                                    className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2"
+                                >
+                                    Close Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Rejection Reason Modal */}
             {rejectionModal.show && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-red-950/40 backdrop-blur-sm" onClick={() => setRejectionModal({ show: false, targetId: null, reason: '' })}></div>
+                    <div className="absolute inset-0 bg-red-950/40 backdrop-blur-sm" onClick={() => setRejectionModal({ show: false, targetId: null, reason: '', feedback: '' })}></div>
                     <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full relative shadow-2xl border border-red-50">
                         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic mb-4">Rejection Reason</h3>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Pumili ng rason kung bakit rejected ang application, Abe.</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Pumili ng rason at magbigay ng feedback, Abe.</p>
                         
-                        <div className="space-y-3 mb-8">
+                        <div className="space-y-2 mb-6 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                             {rejectionReasons.map(reason => (
                                 <button 
                                     key={reason}
@@ -137,20 +257,31 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                             ))}
                         </div>
 
+                        <div className="mb-8">
+                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1">Feedback for Vendor</label>
+                            <textarea 
+                                placeholder="Abe, sabihin mo dito kung bakit rejected (e.g., Blurred yung Selfie mo, paki-ulit)."
+                                value={rejectionModal.feedback}
+                                onChange={(e) => setRejectionModal({ ...rejectionModal, feedback: e.target.value })}
+                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm text-gray-900 placeholder-gray-300 focus:ring-2 focus:ring-red-500 h-24 resize-none"
+                            ></textarea>
+                        </div>
+
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => {
                                     if (!rejectionModal.reason) return alert("Pumili muna ng rason, Abe.");
-                                    setVerificationRequests(prev => prev.map(r => r.id === rejectionModal.targetId ? {...r, status: 'rejected', rejectionReason: rejectionModal.reason} : r));
-                                    showNotification(`Rejected application. Reason: ${rejectionModal.reason}`, "error");
-                                    setRejectionModal({ show: false, targetId: null, reason: '' });
+                                    const finalReason = rejectionModal.reason === 'Other (See Feedback)' ? rejectionModal.feedback : rejectionModal.reason;
+                                    setVerificationRequests(prev => prev.map(r => r.id === rejectionModal.targetId ? {...r, status: 'rejected', rejectionReason: finalReason, feedback: rejectionModal.feedback} : r));
+                                    showNotification(`Rejected application. Reason: ${finalReason}`, "error");
+                                    setRejectionModal({ show: false, targetId: null, reason: '', feedback: '' });
                                 }}
-                                className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all"
+                                className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl shadow-red-100"
                             >
                                 Confirm Reject
                             </button>
                             <button 
-                                onClick={() => setRejectionModal({ show: false, targetId: null, reason: '' })}
+                                onClick={() => setRejectionModal({ show: false, targetId: null, reason: '', feedback: '' })}
                                 className="px-6 bg-gray-50 text-gray-400 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest"
                             >
                                 Cancel
@@ -293,11 +424,49 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">📄 DTI: {req.files.dti}</span>
-                                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">📄 Permit: {req.files.permit}</span>
-                                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">🪪 ID: {req.files.id}</span>
-                                                    {req.files.selfie && <span className="text-[9px] font-black text-purple-600 uppercase tracking-tighter">🤳 Selfie: {req.files.selfie}</span>}
+                                                <div className="flex flex-col gap-2">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setPreviewModal({ show: true, file: req.files.dti, type: 'pdf', requestId: req.id, label: 'DTI Certificate' });
+                                                            setZoom(1); setRotation(0);
+                                                            setChecklist({ nameMatch: false, expiryValid: false, clearDoc: false });
+                                                        }}
+                                                        className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter hover:bg-indigo-50 p-1 rounded transition-colors text-left flex items-center gap-2"
+                                                    >
+                                                        📄 DTI: {req.files.dti} <span className="text-[8px] bg-indigo-100 px-1 rounded">View</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setPreviewModal({ show: true, file: req.files.permit, type: 'pdf', requestId: req.id, label: 'Business Permit' });
+                                                            setZoom(1); setRotation(0);
+                                                            setChecklist({ nameMatch: false, expiryValid: false, clearDoc: false });
+                                                        }}
+                                                        className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter hover:bg-indigo-50 p-1 rounded transition-colors text-left flex items-center gap-2"
+                                                    >
+                                                        📄 Permit: {req.files.permit} <span className="text-[8px] bg-indigo-100 px-1 rounded">View</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setPreviewModal({ show: true, file: req.files.id, type: 'image', requestId: req.id, label: 'Government ID' });
+                                                            setZoom(1); setRotation(0);
+                                                            setChecklist({ nameMatch: false, expiryValid: false, clearDoc: false });
+                                                        }}
+                                                        className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter hover:bg-indigo-50 p-1 rounded transition-colors text-left flex items-center gap-2"
+                                                    >
+                                                        🪪 ID: {req.files.id} <span className="text-[8px] bg-indigo-100 px-1 rounded">View</span>
+                                                    </button>
+                                                    {req.files.selfie && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setPreviewModal({ show: true, file: req.files.selfie, type: 'image', requestId: req.id, label: 'Selfie Verification' });
+                                                                setZoom(1); setRotation(0);
+                                                                setChecklist({ nameMatch: false, expiryValid: false, clearDoc: false });
+                                                            }}
+                                                            className="text-[9px] font-black text-purple-600 uppercase tracking-tighter hover:bg-purple-50 p-1 rounded transition-colors text-left flex items-center gap-2"
+                                                        >
+                                                            🤳 Selfie: {req.files.selfie} <span className="text-[8px] bg-purple-100 px-1 rounded">View</span>
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
