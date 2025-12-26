@@ -36,7 +36,7 @@ export default function App() {
     const [notification, setNotification] = useState(null);
 
     // --- 1. THE SHARED DATABASE (Mock Data) ---
-    const initialData = loadFromAbeStore() || {
+    const defaultData = {
         users: [
             { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false, balance: 0 },
             { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 150000 },
@@ -134,10 +134,6 @@ export default function App() {
                     permit: 'permit_angeles_2025.pdf',
                     id: 'id_reggie_back.jpg'
                 },
-                paymentInfo: {
-                    bankName: 'GCash',
-                    accountNumber: '09123456789'
-                },
                 status: 'pending_verification',
                 date: 'Dec 26, 2025'
             }
@@ -156,10 +152,20 @@ export default function App() {
         ]
     };
 
+    const storedData = loadFromAbeStore() || {};
+    const initialData = {
+        users: storedData.users || defaultData.users,
+        bookings: storedData.bookings || defaultData.bookings,
+        payoutRequests: storedData.payoutRequests || defaultData.payoutRequests,
+        verificationRequests: storedData.verificationRequests || defaultData.verificationRequests,
+        messages: storedData.messages || defaultData.messages,
+    };
+
     const [users, setUsers] = useState(initialData.users);
     const [bookings, setBookings] = useState(initialData.bookings);
     const [payoutRequests, setPayoutRequests] = useState(initialData.payoutRequests);
     const [verificationRequests, setVerificationRequests] = useState(initialData.verificationRequests);
+    const [messages, setMessages] = useState(initialData.messages);
 
     // --- PERSISTENCE EFFECT ---
     useEffect(() => {
@@ -208,8 +214,6 @@ export default function App() {
 
 
     // --- MESSAGING SYSTEM STATE ---
-    const [messages, setMessages] = useState(initialData.messages);
-
     const playPopSound = () => {
         const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/descent/bomb.mp3'); // Mock pop sound
         audio.play().catch(e => console.log("Audio play failed:", e));
