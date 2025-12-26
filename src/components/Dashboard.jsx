@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
-const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking }) => {
+const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const activeBooking = bookings && bookings.length > 0 ? bookings[0] : null;
 
@@ -36,6 +36,15 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking })
                         >
                             End Session
                         </button>
+                        {showInstallButton && (
+                            <button
+                                onClick={onInstallApp}
+                                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                            >
+                                <span>Install App</span>
+                                <span className="text-sm">📲</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Mobile Menu Toggle */}

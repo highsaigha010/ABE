@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
-const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification, payoutRequests, onAddPayoutRequest }) => {
+const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification, payoutRequests, onAddPayoutRequest, showInstallButton, onInstallApp }) => {
 
   const currentJob = bookings[0];
 
@@ -187,6 +187,16 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
               >
                 Log Out
               </button>
+
+              {showInstallButton && (
+                <button
+                    onClick={onInstallApp}
+                    className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                >
+                  <span>Install App</span>
+                  <span className="text-sm">📲</span>
+                </button>
+              )}
             </div>
           </div>
         </nav>

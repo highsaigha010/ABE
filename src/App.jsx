@@ -26,9 +26,16 @@ export default function App() {
         password: "ADMIN_PASSWORD_2025" // In a real app, this should be handled via backend
     };
     const [isAdminVerified, setIsAdminVerified] = useState(false);
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     // 2. I-check kung naka-login na sa Access Gate o User session dati
     useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
         const savedAccess = localStorage.getItem('abe_beta_access');
         if (savedAccess === 'true') {
             setHasAccess(true);
@@ -42,7 +49,18 @@ export default function App() {
                 setIsAdminVerified(true);
             }
         }
+
+        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     }, []);
+
+    const handleInstallApp = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+        }
+    };
 
 
     // --- OTHER STATES ---
@@ -450,6 +468,8 @@ export default function App() {
                         showNotification={showNotification}
                         payoutRequests={payoutRequests}
                         onAddPayoutRequest={(req) => setPayoutRequests(prev => [req, ...prev])}
+                        showInstallButton={!!deferredPrompt}
+                        onInstallApp={handleInstallApp}
                     />
                 </>
             );
@@ -537,6 +557,8 @@ export default function App() {
                     onLogout={handleLogout}
                     onFindSuppliers={() => setCurrentView('vendor-search')}
                     onViewBooking={() => setCurrentView('vendor-profile')}
+                    showInstallButton={!!deferredPrompt}
+                    onInstallApp={handleInstallApp}
                 />
             </>
         );
