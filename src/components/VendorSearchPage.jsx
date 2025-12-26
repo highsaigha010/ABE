@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-export default function VendorSearchPage({ onViewProfile, users = [] }) {
+export default function VendorSearchPage({ onViewProfile, users = [], user, bookings = [], projects = [], showNotification, initialCategory }) {
     const [city, setCity] = useState('ANGELES');
-    const [category, setCategory] = useState('PHOTO');
+    const [category, setCategory] = useState(initialCategory || 'PHOTO');
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -11,8 +11,45 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
     const [quoteData, setQuoteData] = useState({ date: '', details: '' });
     const [quoteLoading, setQuoteLoading] = useState(false);
 
+    // AGENT PROJECT LOGIC
+    const [selectedProjectId, setSelectedProjectId] = useState(null);
+
+    useEffect(() => {
+        if (user && user.role === 'AGENT') {
+            // localStorage interactions disabled
+        }
+    }, [user]);
+
+    const handleProjectChange = (id) => {
+        if (id === 'NEW_PROJECT') {
+            showNotification('Abe, please create a new project in your Agent Dashboard first!', 'info');
+            return;
+        }
+        setSelectedProjectId(id);
+    };
+
+    const handleShortlistVendor = (vendor) => {
+        if (!selectedProjectId) {
+            showNotification('Abe, paki-pili muna ang Active Project bago mag-shortlist!', 'error');
+            return;
+        }
+        
+        showNotification(`Shortlisting disabled in dummy mode, Abe!`, 'info');
+    };
+
+    const myProjects = user?.role === 'AGENT' ? projects.filter(p => p.agentId === user.id) : [];
+    const selectedProject = myProjects.find(p => p.id === selectedProjectId);
+
     // Backend endpoint
     const API_URL = "https://wo8fo93m11.execute-api.us-east-1.amazonaws.com";
+
+    const handleViewProfile = (vendorId) => {
+        if (user && user.role === 'AGENT' && !selectedProjectId) {
+            showNotification('Abe, paki-pili muna ang Active Project bago mag-book ng supplier!', 'error');
+            return;
+        }
+        onViewProfile && onViewProfile(vendorId);
+    };
 
     const handleSearch = async (e) => {
         if (e) e.preventDefault();
@@ -139,6 +176,41 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
                         Discover and book verified photography, catering, and venue professionals in Angeles, Clark, and San Fernando.
                     </p>
 
+                    {/* AGENT PROJECT SELECTOR */}
+                    {user && user.role === 'AGENT' && (
+                        <div className="max-w-4xl mx-auto mb-6 animate-in slide-in-from-top duration-700">
+                            <div className="bg-white/10 backdrop-blur-2xl p-1 rounded-[2rem] border border-white/20">
+                                <div className="bg-gray-900 rounded-[1.8rem] px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-lg shadow-lg">💼</div>
+                                        <div className="text-left">
+                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Booking for Project:</p>
+                                            <p className="text-sm font-bold text-white italic">
+                                                {selectedProject ? selectedProject.name : 'No Project Selected'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full sm:w-auto min-w-[240px]">
+                                        <select 
+                                            value={selectedProjectId || ''}
+                                            onChange={(e) => handleProjectChange(e.target.value)}
+                                            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer"
+                                        >
+                                            <option value="" className="bg-gray-900 text-gray-400">-- Select Project --</option>
+                                            {projects.map(proj => (
+                                                <option key={proj.id} value={proj.id} className="bg-gray-900 text-white">
+                                                    {proj.name} ({proj.clientName})
+                                                </option>
+                                            ))}
+                                            <option value="NEW_PROJECT" className="bg-gray-900 text-indigo-400 font-black">+ Create New Project</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Search Bar Card */}
                     <div className="bg-white/10 backdrop-blur-2xl p-2 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-white/20 max-w-4xl mx-auto">
                         <div className="bg-white p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] shadow-inner flex flex-col md:flex-row gap-4 sm:gap-6">
@@ -212,8 +284,13 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
                                 : (vendor.coverImage ? `https://photo-assets-reggie-unique-dev.s3.amazonaws.com/${vendor.coverImage}` : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80');
 
                                 return (
-                                    <div key={idx} className="bg-indigo-600 rounded-[2.5rem] p-1 relative overflow-hidden group shadow-2xl shadow-indigo-200">
+                                    <div key={idx} className={`${selectedProject ? 'bg-green-500 scale-[1.02]' : 'bg-indigo-600'} rounded-[2.5rem] p-1 relative overflow-hidden group shadow-2xl shadow-indigo-200 transition-all duration-500`}>
                                         <div className="bg-white rounded-[2.3rem] p-6 h-full flex flex-col">
+                                            {selectedProject && (
+                                                <div className="absolute top-8 right-8 z-10 bg-green-500 text-white px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg animate-bounce">
+                                                    Ready to book for {selectedProject.name}
+                                                </div>
+                                            )}
                                             <div className="h-48 rounded-[1.8rem] overflow-hidden mb-6 relative">
                                                 <img src={coverImageUrl} className="w-full h-full object-cover" alt={vendor.businessName} />
                                                 <div className="absolute inset-0 bg-indigo-900/20 backdrop-blur-[1px]"></div>
@@ -224,11 +301,20 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
                                             
                                             <div className="mt-auto flex gap-2">
                                                 <button 
-                                                    onClick={() => onViewProfile && onViewProfile(vendor.pk?.replace('VENDOR#', ''))}
+                                                    onClick={() => handleViewProfile(vendor.pk?.replace('VENDOR#', ''))}
                                                     className="flex-1 py-3.5 bg-gray-50 text-gray-900 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-100"
                                                 >
                                                     View Profile
                                                 </button>
+                                                {user?.role === 'AGENT' && (
+                                                    <button 
+                                                        onClick={() => handleShortlistVendor(vendor)}
+                                                        className="px-4 py-3.5 bg-amber-50 text-amber-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all border border-amber-100 shadow-sm"
+                                                        title="Add to Project Shortlist"
+                                                    >
+                                                        ⭐
+                                                    </button>
+                                                )}
                                                 <button 
                                                     onClick={() => setQuoteModal({ show: true, vendor })}
                                                     className="px-4 py-3.5 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
@@ -296,8 +382,15 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
                                 ? vendor.coverImage 
                                 : (vendor.coverImage ? `https://photo-assets-reggie-unique-dev.s3.amazonaws.com/${vendor.coverImage}` : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80');
 
+                            const isSelected = selectedProject;
+
                             return (
-                                <div key={vendor.pk || index} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-gray-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-500 border border-gray-50 group flex flex-col">
+                                <div key={vendor.pk || index} className={`bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-gray-100 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-500 border-2 ${isSelected ? 'border-green-500' : 'border-gray-50'} group flex flex-col relative`}>
+                                    {isSelected && (
+                                        <div className="absolute top-4 left-4 z-10 bg-green-500 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">
+                                            Booking for {selectedProject.name}
+                                        </div>
+                                    )}
                                     <div className="h-72 relative overflow-hidden">
                                         <img 
                                             src={coverImageUrl} 
@@ -347,11 +440,20 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
                                         
                                         <div className="flex gap-2">
                                             <button 
-                                                onClick={() => onViewProfile && onViewProfile(vendor.pk?.replace('VENDOR#', ''))}
+                                                onClick={() => handleViewProfile(vendor.pk?.replace('VENDOR#', ''))}
                                                 className="flex-1 py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl group/btn"
                                             >
                                                 View Profile <span className="inline-block transition-transform group-hover/btn:translate-x-1">&rarr;</span>
                                             </button>
+                                            {user?.role === 'AGENT' && (
+                                                <button 
+                                                    onClick={() => handleShortlistVendor(vendor)}
+                                                    className="px-6 py-5 bg-amber-50 text-amber-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-600 hover:text-white transition-all border border-amber-100 shadow-sm"
+                                                    title="Add to Project Shortlist"
+                                                >
+                                                    ⭐
+                                                </button>
+                                            )}
                                             <button 
                                                 onClick={() => setQuoteModal({ show: true, vendor })}
                                                 className="px-6 py-5 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm"

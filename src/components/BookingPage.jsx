@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
 const BookingPage = ({ user, bookingData, onUpdateStatus, onRedirectToLogin, onBack, showNotification }) => {
+  if (!bookingData) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6 text-center">
+        <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-gray-50">
+          <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter uppercase italic">Booking Not Found</h1>
+          <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Abe, it looks like this booking doesn't exist.</p>
+          <button onClick={onBack} className="mt-8 bg-gray-900 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest">Balik sa Home</button>
+        </div>
+      </div>
+    );
+  }
+
   const [selectedPkg, setSelectedPkg] = useState('essential');
   const [isLoading, setIsLoading] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);

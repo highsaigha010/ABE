@@ -9,11 +9,24 @@ import {
 
 const PAMPANGA_GEO_URL = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/philippines/pampanga.json";
 
-const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction, messages }) => {
-    const [activeTab, setActiveTab] = useState('verification'); // 'verification', 'vendors', 'bookings', 'analytics', or 'payouts'
+const AdminDashboard = ({ users, bookings, projects = [], onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction, messages }) => {
+    const [activeTab, setActiveTab] = useState('verification'); // 'verification', 'vendors', 'bookings', 'analytics', 'payouts', or 'leakage'
     const [confirmModal, setConfirmModal] = useState({ show: false, targetId: null, action: null, label: '', data: null });
     const [rejectionModal, setRejectionModal] = useState({ show: false, targetId: null, reason: '', feedback: '' });
     const [chatLogModal, setChatLogModal] = useState({ show: false, bookingId: null });
+    const [warningModal, setWarningModal] = useState({ show: false, userId: null, userName: '', message: '' });
+
+    const handleSendWarning = () => {
+        if (!warningModal.message.trim()) {
+            showNotification('Abe, paki-sulat ang warning message!', 'error');
+            return;
+        }
+        
+        // Simulating sending a system warning message
+        // In a real app, this would call onSendMessage with 'SYSTEM' senderId
+        showNotification(`Official Warning sent to ${warningModal.userName}, Abe!`, 'success');
+        setWarningModal({ show: false, userId: null, userName: '', message: '' });
+    };
     const rejectionReasons = [
         'Expired Permit',
         'Name Mismatch (ID vs Bank)',
@@ -33,6 +46,43 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
     const [expandedBookingId, setExpandedBookingId] = useState(null);
     const [tooltipContent, setTooltipContent] = useState(null);
     const [hoveredBookingId, setHoveredBookingId] = useState(null);
+
+    // --- LEAKAGE AUDIT CALCULATIONS ---
+    const leakageConversations = bookings.map(booking => {
+        const bookingMessages = messages.filter(m => m.bookingId === booking.id);
+        const flaggedMessages = bookingMessages.filter(m => m.isFlagged);
+        const messageCount = bookingMessages.length;
+        const hasContract = bookingMessages.some(m => m.type === 'contract');
+        
+        return {
+            ...booking,
+            messageCount,
+            flaggedMessages,
+            isSuspicious: messageCount > 20 && !hasContract,
+            hasLeakageKeywords: flaggedMessages.length > 0
+        };
+    }).filter(c => c.isSuspicious || c.hasLeakageKeywords);
+
+    const agentCancellationStats = users.filter(u => u.role === 'AGENT').map(agent => {
+        const agentProjects = projects.filter(p => p.agentId === agent.id);
+        const agentBookings = bookings.filter(b => b.referralCode === agent.id);
+        
+        const totalProjects = agentProjects.length;
+        const successfulProjects = agentProjects.filter(p => 
+            agentBookings.some(b => b.projectId === p.id && ['paid', 'released', 'completed'].includes(b.status))
+        ).length;
+        
+        const cancellationRate = totalProjects > 0 
+            ? Math.round(((totalProjects - successfulProjects) / totalProjects) * 100) 
+            : 0;
+
+        return {
+            ...agent,
+            totalProjects,
+            successfulProjects,
+            cancellationRate
+        };
+    });
 
     // Helper to mask sensitive data
     const maskData = (data, prefix = '') => {
@@ -65,6 +115,32 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
 
     const vendorCount = users.filter(u => u.role === 'vendor').length;
     const clientCount = users.filter(u => u.role === 'client').length;
+    const agentCount = users.filter(u => u.role === 'AGENT').length;
+
+    // --- LEAKAGE RISK AUDIT LOGIC ---
+    const agentsWithRisk = users.filter(u => u.role === 'AGENT').map(agent => {
+        const agentProjects = projects.filter(p => p.agentId === agent.id);
+        const agentBookings = bookings.filter(b => b.referralCode === agent.id);
+        
+        // Simulating cancellation tracking (since we don't have a formal 'cancelled' status in the provided data, 
+        // we'll look for projects with target bookings but 0 secured bookings after 7 days, OR manual flags)
+        // For this demo, let's look for agents who have messages for a project but no payment was ever made.
+        
+        const projectMessages = messages.filter(m => m.projectId && m.senderId === agent.id);
+        const uniqueProjectChatted = new Set(projectMessages.map(m => m.projectId));
+        
+        let leakageScore = 0;
+        uniqueProjectChatted.forEach(projId => {
+            const hasPayment = agentBookings.some(b => b.projectId === projId && ['paid', 'released', 'completed'].includes(b.status));
+            if (!hasPayment) leakageScore++;
+        });
+
+        return {
+            ...agent,
+            leakageScore,
+            isHighRisk: leakageScore >= 2 // Flag if 2 or more projects had chats but no booking
+        };
+    }).filter(a => a.isHighRisk);
 
     const topVendors = users.filter(u => {
         if (u.role !== 'vendor' || u.strikes > 0) return false;
@@ -326,6 +402,43 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                     </div>
                 </div>
             )}
+
+            {/* --- WARNING MODAL (INTERVENTION) --- */}
+            {warningModal.show && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-gray-950/40 backdrop-blur-md" onClick={() => setWarningModal({ show: false, userId: null, userName: '', message: '' })}></div>
+                    <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 relative z-10 shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="text-center mb-8">
+                            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6">⚠️</div>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tighter italic uppercase leading-none">Admin Intervention</h3>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Sending official warning to {warningModal.userName}</p>
+                        </div>
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black text-gray-900 uppercase tracking-widest ml-1 mb-2 block">Official Warning Message</label>
+                            <textarea 
+                                placeholder="Abe, na-detect ng system ang suspicious activity sa iyong account. Please keep all transactions within the platform to avoid suspension."
+                                value={warningModal.message}
+                                onChange={(e) => setWarningModal({ ...warningModal, message: e.target.value })}
+                                className="w-full bg-gray-50 border-2 border-transparent focus:border-red-500 rounded-2xl px-6 py-4 font-bold text-sm transition-all outline-none resize-none h-40"
+                            ></textarea>
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    onClick={handleSendWarning}
+                                    className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95"
+                                >
+                                    Send Warning, Abe!
+                                </button>
+                                <button 
+                                    onClick={() => setWarningModal({ show: false, userId: null, userName: '', message: '' })}
+                                    className="px-6 bg-gray-50 text-gray-400 font-black text-[10px] uppercase tracking-widest rounded-2xl"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Confirmation Modal */}
             {confirmModal.show && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -415,6 +528,12 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                 className={`text-lg font-black uppercase tracking-tighter italic transition-all ${activeTab === 'analytics' ? 'text-indigo-600 border-b-4 border-indigo-600' : 'text-gray-300 hover:text-gray-400'}`}
                             >
                                 Analytics
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('leakage')}
+                                className={`text-lg font-black uppercase tracking-tighter italic transition-all ${activeTab === 'leakage' ? 'text-red-600 border-b-4 border-red-600' : 'text-gray-300 hover:text-gray-400'}`}
+                            >
+                                Leakage Audit
                             </button>
                         </div>
                         <input type="text" placeholder="Search Cabalen..." className="bg-gray-50 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 w-64" />
@@ -571,6 +690,155 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                     )}
                                 </tbody>
                             </table>
+                        ) : activeTab === 'leakage' ? (
+                            <div className="p-8 space-y-12 animate-in fade-in duration-500">
+                                {/* LEAKAGE AUDIT REPORT HEADER */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="bg-red-50 border-2 border-red-100 rounded-[2rem] p-8">
+                                        <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-2">Suspicious Chats</p>
+                                        <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{leakageConversations.filter(c => c.isSuspicious).length}</h3>
+                                        <p className="text-[9px] font-bold text-gray-400 mt-2 uppercase">High message count, 0 contracts</p>
+                                    </div>
+                                    <div className="bg-amber-50 border-2 border-amber-100 rounded-[2rem] p-8">
+                                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Keyword Alerts</p>
+                                        <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{leakageConversations.filter(c => c.hasLeakageKeywords).length}</h3>
+                                        <p className="text-[9px] font-bold text-gray-400 mt-2 uppercase">Restricted words detected</p>
+                                    </div>
+                                    <div className="bg-gray-900 rounded-[2rem] p-8 text-white">
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Overall Risk Level</p>
+                                        <h3 className="text-4xl font-black tracking-tighter italic">
+                                            {leakageConversations.length > 5 ? 'HIGH' : leakageConversations.length > 2 ? 'MEDIUM' : 'LOW'}
+                                        </h3>
+                                        <p className="text-[9px] font-bold text-gray-500 mt-2 uppercase">Based on platform-wide activity</p>
+                                    </div>
+                                </div>
+
+                                {/* CONVERSATION PULSE & KEYWORD ALERTS TABLE */}
+                                <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+                                    <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest italic">Conversation Pulse & Alerts</h4>
+                                        <span className="text-[10px] font-black text-red-600 bg-white px-3 py-1 rounded-full border border-red-100 uppercase">Suspicious Activity</span>
+                                    </div>
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                                <th className="px-8 py-5">Conversation / Participants</th>
+                                                <th className="px-8 py-5">Activity Pulse</th>
+                                                <th className="px-8 py-5">Flagged Snippets</th>
+                                                <th className="px-8 py-5 text-right">Intervention</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {leakageConversations.map((chat) => (
+                                                <tr key={chat.id} className="hover:bg-red-50/20 transition-colors">
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-black text-gray-900 uppercase tracking-tight">{chat.clientName} ↔ {chat.vendorName}</span>
+                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Booking ID: {chat.id}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-2 h-2 rounded-full ${chat.isSuspicious ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`}></div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-black text-gray-900">{chat.messageCount} Messages</span>
+                                                                <span className="text-[9px] text-gray-400 font-bold uppercase">0 Contracts / Quotes</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 max-w-xs">
+                                                        <div className="space-y-2">
+                                                            {chat.flaggedMessages.slice(0, 2).map((msg, i) => (
+                                                                <div key={i} className="bg-amber-50 border border-amber-100 p-2 rounded-xl">
+                                                                    <p className="text-[10px] font-bold text-amber-900 leading-tight italic truncate">"{msg.text}"</p>
+                                                                    <p className="text-[8px] font-black text-amber-600 uppercase mt-1">Detected: Restricted Keywords</p>
+                                                                </div>
+                                                            ))}
+                                                            {chat.flaggedMessages.length > 2 && (
+                                                                <button 
+                                                                    onClick={() => setChatLogModal({ show: true, bookingId: chat.id })}
+                                                                    className="text-[9px] font-black text-indigo-600 uppercase underline"
+                                                                >
+                                                                    View all {chat.flaggedMessages.length} alerts
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        <button 
+                                                            onClick={() => setWarningModal({ show: true, userId: chat.vendorName, userName: chat.vendorName, message: '' })}
+                                                            className="bg-gray-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all"
+                                                        >
+                                                            Warn User
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {leakageConversations.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="4" className="p-20 text-center italic text-gray-400 text-sm">Walang suspicious activity na na-detect, Abe!</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* PROJECT CANCELLATION TRACKER */}
+                                <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+                                    <div className="p-8 border-b border-gray-50 flex justify-between items-center">
+                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest italic">Agent Cancellation Tracker</h4>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase">Conversion Monitoring</span>
+                                    </div>
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                                <th className="px-8 py-5">Agent Name</th>
+                                                <th className="px-8 py-5">Total Projects</th>
+                                                <th className="px-8 py-5">Successful Bookings</th>
+                                                <th className="px-8 py-5">Cancellation Rate</th>
+                                                <th className="px-8 py-5 text-right">Risk Level</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {agentCancellationStats.map((stat) => (
+                                                <tr key={stat.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-black text-gray-900 uppercase tracking-tight">{stat.name}</span>
+                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">ID: {stat.id}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <span className="text-sm font-black text-gray-900">{stat.totalProjects}</span>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <span className="text-sm font-black text-emerald-600">{stat.successfulProjects}</span>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[100px]">
+                                                                <div 
+                                                                    className={`h-full ${stat.cancellationRate > 70 ? 'bg-red-500' : stat.cancellationRate > 40 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                                                    style={{ width: `${stat.cancellationRate}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-gray-900">{stat.cancellationRate}%</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                            stat.cancellationRate > 70 ? 'bg-red-100 text-red-600' : 
+                                                            stat.cancellationRate > 40 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                                                        }`}>
+                                                            {stat.cancellationRate > 70 ? 'CRITICAL' : stat.cancellationRate > 40 ? 'WARNING' : 'HEALTHY'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         ) : activeTab === 'vendors' ? (
                             <table className="w-full text-left">
                                 <thead>
@@ -827,6 +1095,52 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                             </table>
                         ) : (
                             <div className="p-8 space-y-12">
+                                {/* PLATFORM INTEGRITY SECTION */}
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xl font-black text-gray-900 tracking-tighter italic uppercase">Platform Integrity Layer</h3>
+                                        <span className="text-[10px] font-black text-red-600 bg-red-50 px-3 py-1 rounded-full uppercase border border-red-100 animate-pulse">
+                                            {agentsWithRisk.length} Potential Leaks Detected
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {agentsWithRisk.map(agent => (
+                                            <div key={agent.id} className="bg-white border-2 border-red-500 rounded-[2rem] p-6 shadow-xl relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform"></div>
+                                                <div className="flex items-center gap-4 mb-6">
+                                                    <div className="w-12 h-12 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-xl font-black">🚩</div>
+                                                    <div>
+                                                        <h4 className="font-black text-gray-900 uppercase tracking-tight italic">{agent.name}</h4>
+                                                        <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">High Leakage Risk</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="bg-gray-50 rounded-2xl p-4">
+                                                        <div className="flex justify-between mb-1">
+                                                            <span className="text-[9px] font-black text-gray-400 uppercase">Risk Indicator</span>
+                                                            <span className="text-[10px] font-black text-red-600">{agent.leakageScore} Flags</span>
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-gray-600 leading-tight">Nag-chat sa supplier tungkol sa projects pero hindi nag-book sa app.</p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => showNotification(`Investigation started for Agent ${agent.name}, Abe!`, 'info')}
+                                                        className="w-full py-3 bg-gray-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg"
+                                                    >
+                                                        Review Chat History
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {agentsWithRisk.length === 0 && (
+                                            <div className="col-span-full py-10 bg-emerald-50 rounded-[2rem] border border-emerald-100 text-center">
+                                                <span className="text-2xl mb-2 block">✅</span>
+                                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">No leakage risks detected among agents. Good job, Abe!</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* KPI Section */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm group hover:border-indigo-500 transition-all">

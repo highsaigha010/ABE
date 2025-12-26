@@ -104,6 +104,11 @@ const ChatWindow = ({ booking, currentUser, messages, onSendMessage, onAcceptCon
                                 {isVendor ? booking.clientName : booking.vendorName}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
+                                {booking.projectId && (
+                                    <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100 mr-2">
+                                        Project: {booking.projectId}
+                                    </span>
+                                )}
                                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                                     {booking.id} • Online

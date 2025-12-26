@@ -109,7 +109,13 @@ const AuthForm = ({ initialMode = 'login', onAuthSuccess }) => {
 
             <div className="text-center mt-10">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    {isLogin ? "Don't have an account?" : "Already have an account?"} <span className="text-indigo-600 cursor-pointer hover:underline">Switch Mode</span>
+                    {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
+                    <span 
+                        className="text-indigo-600 cursor-pointer hover:underline"
+                        onClick={() => setIsLogin(!isLogin)}
+                    >
+                        Switch Mode
+                    </span>
                 </p>
             </div>
         </div>

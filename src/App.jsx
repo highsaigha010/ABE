@@ -13,13 +13,15 @@ import TermsForESCROW from "./components/TermsForESCROW";
 import LegalPage from "./components/LegalPage";
 import NotificationToast from "./components/NotificationToast";
 import ChatWindow from "./components/ChatWindow";
+import AgentDashboard from "./components/AgentDashboard";
+import ClientSharedView from "./components/ClientSharedView";
 import {Analytics} from '@vercel/analytics/react';
-import { saveToAbeStore, loadFromAbeStore } from './utils/AbeStore.js';
+import sampleVendors from './data/sample_vendors.json';
 
 export default function App() {
     // --- 1. SECURITY & ACCESS STATES ---
     const [user, setUser] = useState(null);
-    const [hasAccess, setHasAccess] = useState(false);
+    const [hasAccess, setHasAccess] = useState(true); // Bypass for demo
     const [accessCode, setAccessCode] = useState('');
     const CORRECT_CODE = "ABE2025";
     
@@ -30,19 +32,34 @@ export default function App() {
     };
     const [isAdminVerified, setIsAdminVerified] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [initialCategory, setInitialCategory] = useState(null);
     const [activeChatBookingId, setActiveChatBookingId] = useState(null);
-    const [currentView, setCurrentView] = useState('landing');
+    const [currentView, setCurrentView] = useState(() => {
+        try {
+            const path = window.location.pathname;
+            if (path.startsWith('/shared/') || path.startsWith('/view-project/')) return 'shared-project';
+            return 'landing';
+        } catch (e) {
+            return 'landing';
+        }
+    });
     const [selectedVendorId, setSelectedVendorId] = useState(null);
     const [notification, setNotification] = useState(null);
 
     // --- 1. THE SHARED DATABASE (Mock Data) ---
     const defaultData = {
+        eventDate: '',
+        totalBudget: 0,
+        matchmakerData: null,
         users: [
-            { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false, balance: 0 },
-            { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 150000 },
-            { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false, balance: 0 },
-            { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false, balance: 75000 },
-            { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true, balance: 0 },
+            ...sampleVendors,
+            { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false, balance: 0, city: 'Angeles' },
+            { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 150000, city: 'Angeles', category: 'Photographers', startingPrice: 20000, rating: 5, icon: "📸" },
+            { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false, balance: 0, city: 'San Fernando' },
+            { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false, balance: 75000, city: 'Mabalacat', category: 'Transport', startingPrice: 10000, rating: 4, icon: "🚗" },
+            { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true, balance: 0, city: 'Clark' },
+            { id: 'usr-006', name: 'Clark Convention Center', email: 'clark@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 500000, city: 'Clark', category: 'Venues', startingPrice: 100000, rating: 5, icon: "🏰" },
+            { id: 'usr-007', name: 'Kapampangan Catering', email: 'food@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 20000, city: 'San Fernando', category: 'Catering', startingPrice: 15000, rating: 5, icon: "🍽️" },
         ],
         bookings: [
             {
@@ -111,6 +128,17 @@ export default function App() {
                 city: 'San Fernando',
                 lat: 15.0348,
                 lng: 120.6814,
+            },
+            {
+                id: 'txn-006',
+                clientName: 'Agent Managed Client',
+                vendorName: 'Reggie Photography',
+                date: 'Jan 05, 2026',
+                package: 'Agent Special',
+                price: 100000,
+                status: 'paid',
+                city: 'Angeles',
+                referralCode: 'usr-001' // Managed by Jennie Rose (if she upgrades)
             }
         ],
         payoutRequests: [
@@ -138,6 +166,22 @@ export default function App() {
                 date: 'Dec 26, 2025'
             }
         ],
+        projects: [
+            {
+                id: 'proj-001',
+                name: "Maria Clara's Debut",
+                clientName: 'Maria Clara',
+                totalClientBudget: 500000,
+                totalSupplierCost: 400000, // Split from client budget
+                targetDate: '2025-12-30',
+                serviceSlots: [
+                    { id: 'slot-1', category: 'PHOTOGRAPHY', vendorName: 'Reggie Photography', budget: 50000, vendorInclusions: 'Unlimited shots, 100 edited', basePrice: 20000 },
+                    { id: 'slot-2', category: 'VENUE', vendorName: 'Clark Convention Center', budget: 200000, vendorInclusions: 'Grand Ballroom', basePrice: 100000 }
+                ],
+                approvalStatus: 'PENDING',
+                agentId: 'admin-001'
+            }
+        ],
         messages: [
             {
                 id: 'msg-001',
@@ -152,31 +196,17 @@ export default function App() {
         ]
     };
 
-    const storedData = loadFromAbeStore() || {};
-    const initialData = {
-        users: storedData.users || defaultData.users,
-        bookings: storedData.bookings || defaultData.bookings,
-        payoutRequests: storedData.payoutRequests || defaultData.payoutRequests,
-        verificationRequests: storedData.verificationRequests || defaultData.verificationRequests,
-        messages: storedData.messages || defaultData.messages,
-    };
+    const initialData = defaultData;
 
+    const [eventDate, setEventDate] = useState(initialData.eventDate);
+    const [totalBudget, setTotalBudget] = useState(initialData.totalBudget);
+    const [matchmakerData, setMatchmakerData] = useState(initialData.matchmakerData);
     const [users, setUsers] = useState(initialData.users);
     const [bookings, setBookings] = useState(initialData.bookings);
     const [payoutRequests, setPayoutRequests] = useState(initialData.payoutRequests);
     const [verificationRequests, setVerificationRequests] = useState(initialData.verificationRequests);
     const [messages, setMessages] = useState(initialData.messages);
-
-    // --- PERSISTENCE EFFECT ---
-    useEffect(() => {
-        saveToAbeStore({
-            users,
-            bookings,
-            payoutRequests,
-            verificationRequests,
-            messages
-        });
-    }, [users, bookings, payoutRequests, verificationRequests, messages]);
+    const [projects, setProjects] = useState(initialData.projects);
 
     // 2. I-check kung naka-login na sa Access Gate o User session dati
     useEffect(() => {
@@ -186,17 +216,13 @@ export default function App() {
         };
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-        const savedAccess = localStorage.getItem('abe_beta_access');
-        if (savedAccess === 'true') {
-            setHasAccess(true);
-        }
-
-        const storedUser = localStorage.getItem('photo_user');
-        if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            if (parsedUser.role === 'ADMIN') {
-                setIsAdminVerified(true);
+        // Check if we are on a shared link
+        const path = window.location.pathname;
+        if (path.startsWith('/shared/') || path.startsWith('/view-project/')) {
+            const parts = path.split('/');
+            const hash = parts[parts.length - 1];
+            if (hash) {
+                setSelectedProjectId(hash);
             }
         }
 
@@ -212,6 +238,40 @@ export default function App() {
         }
     };
 
+
+    const [selectedProjectId, setSelectedProjectId] = useState(() => {
+        try {
+            const path = window.location.pathname;
+            if (path.startsWith('/shared/') || path.startsWith('/view-project/')) {
+                const parts = path.split('/');
+                const lastPart = parts[parts.length - 1];
+                return lastPart ? decodeURIComponent(lastPart) : null;
+            }
+        } catch (e) {
+            console.error("Error initializing selectedProjectId:", e);
+        }
+        return null;
+    });
+
+    const handleProjectAction = (projectId, action, feedback) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === projectId) {
+                if (action === 'APPROVED') {
+                    showNotification(`Project ${p.name} Approved! Securing contracts...`, 'success');
+                    return { ...p, approvalStatus: 'APPROVED' };
+                }
+                if (action === 'FEEDBACK') {
+                    showNotification(`Feedback sent to Agent for ${p.name}`, 'info');
+                    return { ...p, approvalStatus: 'CHANGES_REQUESTED', feedback };
+                }
+                if (action === 'REFUND_SURPLUS') {
+                    showNotification(`Refund request for ${p.name} submitted!`, 'success');
+                    return { ...p, refundStatus: 'PENDING_REFUND' };
+                }
+            }
+            return p;
+        }));
+    };
 
     // --- MESSAGING SYSTEM STATE ---
     const playPopSound = () => {
@@ -242,12 +302,12 @@ export default function App() {
         
         sortedMessages.forEach(msg => {
             if (!conversationMap[msg.bookingId]) {
-                const booking = bookings.find(b => b.id === msg.bookingId);
+                const booking = (bookings || []).find(b => b && b.id === msg.bookingId);
                 if (booking) {
                     conversationMap[msg.bookingId] = {
                         bookingId: msg.bookingId,
                         lastMessage: msg,
-                        senderName: user?.role === 'VENDOR' ? booking.clientName : booking.vendorName,
+                        senderName: user?.role === 'VENDOR' ? booking.clientName : (booking.vendorName || 'Vendor'),
                     };
                 }
             }
@@ -296,6 +356,15 @@ export default function App() {
         showNotification(`Contract Accepted! ₱${parseFloat(price).toLocaleString()} secured in Smart Escrow. Ching!`, "success");
         // Awtomatikong isara ang chat pagkatapos ng success payment (opsyonal, pero para sa UX)
         // setActiveChatBookingId(null); 
+    };
+
+    const handleUpgradeToAgent = () => {
+        if (!user) return;
+        const updatedUser = { ...user, role: 'AGENT' };
+        setUser(updatedUser);
+        setUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
+        // localStorage.setItem('photo_user', JSON.stringify(updatedUser));
+        showNotification("Welcome to the Agent Program, Abe! Your dashboard has been upgraded.", "success");
     };
 
     // Handle verification request globally
@@ -393,6 +462,23 @@ export default function App() {
 
                             if (normalizedAction === 'RELEASE' || normalizedAction === 'RELEASED') {
                                 notificationMsg = `Transaction Finalized! ₱${(b.price * 0.8).toLocaleString()} sent to ${b.vendorName}.`;
+                                
+                                // AGENT COMMISSION LOGIC (Zero-Kickback: Fixed 1% of Supplier Cost)
+                                if (b.referralCode) {
+                                    // Commission is strictly 1% of the supplier price, NOT the surplus
+                                    const commission = (b.price || 0) * 0.01;
+                                    setUsers(prevUsers => prevUsers.map(u => {
+                                        if (u.id === b.referralCode) {
+                                            return { 
+                                                ...u, 
+                                                commissionBalance: (u.commissionBalance || 0) + commission 
+                                            };
+                                        }
+                                        return u;
+                                    }));
+                                    console.log(`💸 Zero-Kickback Commission: ₱${commission} credited to Agent ${b.referralCode}`);
+                                }
+
                                 return { ...b, status: 'released' };
                             }
 
@@ -435,7 +521,6 @@ export default function App() {
         e.preventDefault();
         if (accessCode.toUpperCase() === CORRECT_CODE) {
             setHasAccess(true);
-            localStorage.setItem('abe_beta_access', 'true');
         } else {
             alert("Maling code, Abe! Kontakin mo muna kami para sa access.");
         }
@@ -444,55 +529,55 @@ export default function App() {
     const handleLogout = () => {
         setUser(null);
         setIsAdminVerified(false);
-        localStorage.removeItem('photo_user');
+        // localStorage.removeItem('photo_user');
         setCurrentView('landing');
     };
 
     const handleLogin = (credentials) => {
         const { email, password, name } = credentials;
 
-        // 1. HARDCODED CREDENTIALS VERIFICATION
-        let authenticatedUser = null;
+            // 1. HARDCODED CREDENTIALS VERIFICATION
+            let authenticatedUser = null;
 
-        if (email === "admin@abevents.ph" && password === "ABE_Master2025!") {
-            authenticatedUser = {
-                id: 'admin-001',
-                name: 'System Admin',
-                email: email,
-                role: 'ADMIN',
-                balance: 0
-            };
-            setIsAdminVerified(true);
-        } else if (email === "reggie@vendor.com" && password === "VendorPass123") {
-            authenticatedUser = {
-                id: 'usr-002',
-                name: 'Reggie Photography',
-                email: email,
-                role: 'VENDOR',
-                balance: 150000
-            };
-        } else {
-            // For other users in the mock database (Demo purposes)
-            const foundUser = users.find(u => u.email === email);
-            if (foundUser) {
+            if (email === "admin@abevents.ph" && password === "ABE_Master2025!") {
                 authenticatedUser = {
-                    ...foundUser,
-                    role: foundUser.role.toUpperCase()
-                };
-            } else {
-                // Mock Register/Login for new clients
-                authenticatedUser = {
-                    id: Date.now(),
-                    name: name || "New Client",
+                    id: 'admin-001',
+                    name: 'System Admin',
                     email: email,
-                    role: 'CLIENT',
+                    role: 'ADMIN',
                     balance: 0
                 };
+                setIsAdminVerified(true);
+            } else if (email === "reggie@vendor.com" && password === "VendorPass123") {
+                authenticatedUser = {
+                    id: 'usr-002',
+                    name: 'Reggie Photography',
+                    email: email,
+                    role: 'VENDOR',
+                    balance: 150000
+                };
+            } else {
+                // For other users in the mock database (Demo purposes)
+                const foundUser = (users || []).find(u => u && u.email === email);
+                if (foundUser) {
+                    authenticatedUser = {
+                        ...foundUser,
+                        role: (foundUser.role || 'CLIENT').toUpperCase()
+                    };
+                } else {
+                    // Mock Register/Login for new clients
+                    authenticatedUser = {
+                        id: Date.now(),
+                        name: name || "New Client",
+                        email: email,
+                        role: 'CLIENT',
+                        balance: 0
+                    };
+                }
             }
-        }
 
-        // 2. CHECK IF BANNED
-        const isBanned = users.find(u => u.email === email)?.isBanned;
+            // 2. CHECK IF BANNED
+            const isBanned = (users || []).find(u => u && u.email === email)?.isBanned;
         if (isBanned) {
             alert("Abe, ang account mo ay suspendido dahil sa paglabag sa aming Terms of Service.");
             return;
@@ -501,7 +586,13 @@ export default function App() {
         // 3. PERSIST & REDIRECT
         if (authenticatedUser) {
             setUser(authenticatedUser);
-            localStorage.setItem('photo_user', JSON.stringify(authenticatedUser));
+            // localStorage.setItem('photo_user', JSON.stringify(authenticatedUser));
+
+            // Abe, kung nasa shared project link tayo, wag nang mag-redirect sa dashboard
+            if (currentView === 'shared-project') {
+                showNotification(`Welcome back, ${authenticatedUser.name}! Opening shared project...`, 'success');
+                return;
+            }
 
             if (authenticatedUser.role === 'ADMIN') {
                 setCurrentView('admin-dashboard');
@@ -530,7 +621,7 @@ export default function App() {
             if (user && user.id === data.vendorId) {
                 const updatedUser = { ...user, balance: user.balance - data.amount };
                 setUser(updatedUser);
-                localStorage.setItem('photo_user', JSON.stringify(updatedUser));
+                // localStorage.setItem('photo_user', JSON.stringify(updatedUser));
             }
 
             showNotification(`Payout of ₱${data.amount.toLocaleString()} approved for ${data.vendorName}! Ching!`, "success");
@@ -579,6 +670,56 @@ export default function App() {
     }
 
     // --- RENDER LOGIC ---
+    const isClientView = window.location.pathname.includes('/view-project/') || window.location.pathname.startsWith('/shared/');
+
+    // Initial check for shared project link on mount (para sa logic consistency)
+    useEffect(() => {
+        try {
+            const path = window.location.pathname;
+            if (path.startsWith('/shared/') || path.startsWith('/view-project/')) {
+                const parts = path.split('/');
+                const hash = parts[parts.length - 1];
+                if (hash && hash !== selectedProjectId) {
+                    setSelectedProjectId(decodeURIComponent(hash));
+                }
+            }
+        } catch (e) {
+            console.error("Error in shared project effect:", e);
+        }
+    }, [selectedProjectId]);
+
+    if (isClientView) {
+        return (
+            <>
+                <Analytics />
+                {renderNotification()}
+                {user ? (
+                    <ClientSharedView
+                        projectId={selectedProjectId}
+                        agentProjects={projects || []}
+                        bookings={bookings || []}
+                        onAction={handleProjectAction}
+                    />
+                ) : (
+                    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-20 px-6 font-sans">
+                        <div className="max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 shadow-xl shadow-indigo-100">🔒</div>
+                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Login Required</h2>
+                                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-3 leading-relaxed">
+                                    Abe, kailangan mong mag-login para ma-access ang <br /> Client Exclusive Portal ni Maria.
+                                </p>
+                            </div>
+                            <div className="bg-white p-2 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50">
+                                <AuthForm initialMode="login" onAuthSuccess={handleLogin} />
+                            </div>
+                            <p className="text-center mt-8 text-[8px] font-black text-gray-300 uppercase tracking-[0.4em]">Secured by ABE Events Escrow</p>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    }
 
     const renderNotification = () => {
         if (!notification) return null;
@@ -626,10 +767,10 @@ export default function App() {
                     <Analytics/>
                     {renderNotification()}
                     {renderChat()}
-                    <VendorDashboard
+                        <VendorDashboard
                             user={user}
                             onLogout={handleLogout}
-                            bookings={bookings}
+                            bookings={bookings || []}
                             onUpdateStatus={updateBookingStatus}
                             showNotification={showNotification}
                             payoutRequests={payoutRequests}
@@ -644,6 +785,29 @@ export default function App() {
                     </>
                 );
             }
+
+        // AGENT VIEW
+        if (user.role === 'AGENT') {
+            return (
+                <>
+                    <Analytics/>
+                    {renderNotification()}
+                    <AgentDashboard 
+                        user={user}
+                        bookings={bookings || []}
+                        users={users || []}
+                        projects={projects}
+                        setProjects={setProjects}
+                        onLogout={handleLogout}
+                        showNotification={showNotification}
+                        onFindSuppliers={(cat) => {
+                            setInitialCategory(cat);
+                            setCurrentView('vendor-search');
+                        }}
+                    />
+                </>
+            );
+        }
 
             // ADMIN VIEW
             if (user.role === 'ADMIN' || currentView === 'admin-dashboard') {
@@ -665,8 +829,9 @@ export default function App() {
                                     </div>
                                 </nav>
                                 <AdminDashboard 
-                                    users={users} 
-                                    bookings={bookings} 
+                                    users={users || []} 
+                                    bookings={bookings || []} 
+                                    projects={projects}
                                     onUpdateStatus={updateBookingStatus}
                                     isVerified={isAdminVerified}
                                     payoutRequests={payoutRequests}
@@ -691,7 +856,7 @@ export default function App() {
                         {renderNotification()}
                         <BookingPage
                             user={user}
-                            bookingData={bookings[0]}
+                            bookingData={bookings?.find(b => b.id === (activeChatBookingId || (bookings && bookings[0]?.id))) || (bookings && bookings[0])}
                             onUpdateStatus={updateBookingStatus}
                             onRedirectToLogin={() => setCurrentView('login')}
                             onBack={() => setCurrentView('dashboard')}
@@ -707,14 +872,20 @@ export default function App() {
                         <Analytics/>
                         {renderNotification()}
                         <VendorSearchPage
-                            users={users}
-                            bookings={bookings}
+                            users={users || []}
+                            bookings={bookings || []}
+                            projects={projects}
+                            user={user}
+                            showNotification={showNotification}
                             onViewProfile={(id) => {
                                 setSelectedVendorId(id);
                                 setCurrentView('vendor-profile');
                             }}
-                            onBack={() => setCurrentView('dashboard')}
-                            showNotification={showNotification}
+                            onBack={() => {
+                                setCurrentView('dashboard');
+                                setInitialCategory(null);
+                            }}
+                            initialCategory={initialCategory}
                         />
                     </>
                 );
@@ -724,9 +895,10 @@ export default function App() {
                 <>
                     <Analytics/>
                     {renderNotification()}
-                    <Dashboard
+                        <Dashboard
                         user={user}
-                        bookings={bookings}
+                        bookings={bookings || []}
+                        users={users || []}
                         onLogout={handleLogout}
                         onFindSuppliers={() => setCurrentView('vendor-search')}
                         onViewBooking={() => setCurrentView('vendor-profile')}
@@ -738,13 +910,20 @@ export default function App() {
                         handleAcceptContract={handleAcceptContract}
                         unreadCount={unreadCount}
                         latestConversations={latestConversations}
+                        eventDate={eventDate}
+                        setEventDate={setEventDate}
+                        totalBudget={totalBudget}
+                        setTotalBudget={setTotalBudget}
+                        matchmakerData={matchmakerData}
+                        setMatchmakerData={setMatchmakerData}
+                        showNotification={showNotification}
+                        onUpgradeToAgent={handleUpgradeToAgent}
                     />
                 </>
             );
         }
 
     // --- 4. PUBLIC / GUEST / ADMIN VIEWS ---
-    // Dito natin isinama ang 'admin-dashboard' sa listahan
     if (['vendor-signup', 'vendor-search', 'vendor-profile', 'privacy-policy', 'terms-of-escrow', 'support', 'admin-dashboard'].includes(currentView)) {
         return (
             <>
@@ -778,8 +957,9 @@ export default function App() {
                         {currentView === 'admin-dashboard' && (
                              user && user.role === 'ADMIN' ? (
                                 <AdminDashboard
-                                    users={users}
-                                    bookings={bookings}
+                                    users={users || []}
+                                    bookings={bookings || []}
+                                    projects={projects}
                                     onUpdateStatus={updateBookingStatus}
                                     isVerified={isAdminVerified}
                                     payoutRequests={payoutRequests}
@@ -801,15 +981,23 @@ export default function App() {
 
                         {currentView === 'vendor-search' && (
                             <VendorSearchPage 
-                                users={users} 
-                                onBack={() => setCurrentView('landing')}
+                                users={users || []} 
+                                user={user}
+                                bookings={bookings || []}
+                                projects={projects}
+                                showNotification={showNotification}
+                                onBack={() => {
+                                    setCurrentView('landing');
+                                    setInitialCategory(null);
+                                }}
                                 onViewProfile={() => setCurrentView('vendor-profile')}
+                                initialCategory={initialCategory}
                             />
                         )}
                         {currentView === 'vendor-profile' && (
-                            <BookingPage
+                        <BookingPage
                                 user={user}
-                                bookingData={bookings[0]}
+                                bookingData={bookings?.find(b => b.id === (activeChatBookingId || (bookings && bookings[0]?.id))) || (bookings && bookings[0])}
                                 onUpdateStatus={updateBookingStatus}
                                 onRedirectToLogin={() => setCurrentView('login')}
                                 onBack={() => setCurrentView('landing')}
@@ -863,7 +1051,7 @@ export default function App() {
                         };
                         setUser(adminUser);
                         setIsAdminVerified(true);
-                        localStorage.setItem('photo_user', JSON.stringify(adminUser));
+                        // localStorage.setItem('photo_user', JSON.stringify(adminUser));
                         setCurrentView('admin-dashboard');
                     } else {
                         alert("Maling credentials, Abe! Restricted Area ito.");

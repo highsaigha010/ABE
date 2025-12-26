@@ -92,6 +92,27 @@ const TermsForESCROW = () => {
                     </div>
                 </div>
 
+                {/* JUSTICE SYSTEM & DISPUTE RIGHTS */}
+                <div className="mt-12 p-8 bg-indigo-50 rounded-[2.5rem] border border-indigo-100">
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="text-xl">⚖️</span>
+                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">ABE 'Justice System'</h3>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-700 leading-relaxed">
+                        Abe, tandaan: Ang aming <span className="text-indigo-600 font-black italic">Dispute Resolution</span> at <span className="text-indigo-600 font-black italic">Refund Rights</span> ay exclusive lamang para sa mga <span className="underline decoration-indigo-300">In-App Transactions</span>.
+                    </p>
+                    <div className="mt-6 space-y-3">
+                        <div className="flex gap-3">
+                            <span className="text-emerald-500 font-black text-[10px]">✓</span>
+                            <p className="text-[10px] font-bold text-gray-600">In-App: Protektado ang pera mo hanggang matapos ang event.</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <span className="text-red-500 font-black text-[10px]">✕</span>
+                            <p className="text-[10px] font-bold text-gray-600 italic">Outside App: Hindi sakop ng ABE Justice System. No help, no refund.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Safe Badge */}
                 <div className="mt-12 flex flex-col items-center gap-4 opacity-30">
                     <div className="flex items-center gap-3">
