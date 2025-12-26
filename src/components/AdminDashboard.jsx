@@ -12,6 +12,14 @@ const PAMPANGA_GEO_URL = "https://raw.githubusercontent.com/deldersveld/topojson
 const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction }) => {
     const [activeTab, setActiveTab] = useState('verification'); // 'verification', 'vendors', 'bookings', 'analytics', or 'payouts'
     const [confirmModal, setConfirmModal] = useState({ show: false, targetId: null, action: null, label: '', data: null });
+    const [rejectionModal, setRejectionModal] = useState({ show: false, targetId: null, reason: '' });
+    const rejectionReasons = [
+        'Expired Permit',
+        'Name Mismatch (ID vs Bank)',
+        'Blurred Image/Documents',
+        'Invalid DTI Registration',
+        'Selfie Mismatch'
+    ];
     const [expandedBookingId, setExpandedBookingId] = useState(null);
     const [tooltipContent, setTooltipContent] = useState(null);
     const [hoveredBookingId, setHoveredBookingId] = useState(null);
@@ -109,6 +117,48 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] font-sans relative">
+            {/* Rejection Reason Modal */}
+            {rejectionModal.show && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-red-950/40 backdrop-blur-sm" onClick={() => setRejectionModal({ show: false, targetId: null, reason: '' })}></div>
+                    <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full relative shadow-2xl border border-red-50">
+                        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic mb-4">Rejection Reason</h3>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Pumili ng rason kung bakit rejected ang application, Abe.</p>
+                        
+                        <div className="space-y-3 mb-8">
+                            {rejectionReasons.map(reason => (
+                                <button 
+                                    key={reason}
+                                    onClick={() => setRejectionModal({ ...rejectionModal, reason })}
+                                    className={`w-full text-left px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${rejectionModal.reason === reason ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+                                >
+                                    {reason}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => {
+                                    if (!rejectionModal.reason) return alert("Pumili muna ng rason, Abe.");
+                                    setVerificationRequests(prev => prev.map(r => r.id === rejectionModal.targetId ? {...r, status: 'rejected', rejectionReason: rejectionModal.reason} : r));
+                                    showNotification(`Rejected application. Reason: ${rejectionModal.reason}`, "error");
+                                    setRejectionModal({ show: false, targetId: null, reason: '' });
+                                }}
+                                className="flex-1 bg-gray-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all"
+                            >
+                                Confirm Reject
+                            </button>
+                            <button 
+                                onClick={() => setRejectionModal({ show: false, targetId: null, reason: '' })}
+                                className="px-6 bg-gray-50 text-gray-400 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Confirmation Modal */}
             {confirmModal.show && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -221,7 +271,25 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col">
                                                     <span className="font-black text-gray-900 uppercase tracking-tight">{req.businessName}</span>
-                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{req.date}</span>
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Owner: {req.ownerName || 'N/A'}</span>
+                                                    <div className="flex gap-2 mt-3">
+                                                        <a 
+                                                            href={`https://bnrs.dti.gov.ph/search?q=${encodeURIComponent(req.businessName)}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:underline"
+                                                        >
+                                                            🔍 DTI Search
+                                                        </a>
+                                                        <a 
+                                                            href={`https://www.facebook.com/search/top?q=${encodeURIComponent(req.businessName)}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+                                                        >
+                                                            📘 FB Search
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
@@ -229,21 +297,37 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                                     <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">📄 DTI: {req.files.dti}</span>
                                                     <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">📄 Permit: {req.files.permit}</span>
                                                     <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">🪪 ID: {req.files.id}</span>
+                                                    {req.files.selfie && <span className="text-[9px] font-black text-purple-600 uppercase tracking-tighter">🤳 Selfie: {req.files.selfie}</span>}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col">
                                                     <span className="text-xs font-black text-gray-900">{req.paymentInfo.bankName}</span>
                                                     <span className="text-[10px] text-gray-400 font-bold">{isVerified ? req.paymentInfo.accountNumber : '**** **** ****'}</span>
+                                                    <span className="text-[9px] text-indigo-600 font-black uppercase mt-1 italic">Acc: {req.paymentInfo.accountName || 'N/A'}</span>
+
+                                                    {req.ownerName && req.paymentInfo.accountName && 
+                                                     req.ownerName.toLowerCase() !== req.paymentInfo.accountName.toLowerCase() && (
+                                                        <span className="mt-2 bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest">
+                                                            ⚠️ Name Mismatch Warning
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                                    req.status === 'pending_verification' ? 'bg-orange-100 text-orange-600' : 
-                                                    req.status === 'verified' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                                }`}>
-                                                    {req.status.replace('_', ' ')}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                                        req.status === 'pending_verification' ? 'bg-orange-100 text-orange-600' : 
+                                                        req.status === 'verified' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                    }`}>
+                                                        {req.status.replace('_', ' ')}
+                                                    </span>
+                                                    {req.status === 'rejected' && req.rejectionReason && (
+                                                        <span className="text-[8px] font-black text-red-400 uppercase tracking-tighter text-center">
+                                                            Reason: {req.rejectionReason}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 {req.status === 'pending_verification' ? (
@@ -259,8 +343,7 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                                         </button>
                                                         <button 
                                                             onClick={() => {
-                                                                setVerificationRequests(prev => prev.map(r => r.id === req.id ? {...r, status: 'rejected'} : r));
-                                                                showNotification(`Rejected application: ${req.businessName}`, "error");
+                                                                setRejectionModal({ show: true, targetId: req.id, reason: '' });
                                                             }}
                                                             className="bg-red-600 text-white px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-tighter hover:bg-red-700 transition-all"
                                                         >

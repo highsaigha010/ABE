@@ -4,12 +4,15 @@ const VendorVerificationForm = ({ onComplete, businessName }) => {
     const [files, setFiles] = useState({
         dti: null,
         permit: null,
-        id: null
+        id: null,
+        selfie: null
     });
     const [paymentInfo, setPaymentInfo] = useState({
         bankName: '',
-        accountNumber: ''
+        accountNumber: '',
+        accountName: ''
     });
+    const [ownerName, setOwnerName] = useState('');
     const [tosAccepted, setTosAccepted] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -22,8 +25,12 @@ const VendorVerificationForm = ({ onComplete, businessName }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!files.dti || !files.permit || !files.id) {
-            alert("Abe, paki-upload lahat ng required documents!");
+        if (!files.dti || !files.permit || !files.id || !files.selfie) {
+            alert("Abe, paki-upload lahat ng required documents kasama ang Selfie!");
+            return;
+        }
+        if (!ownerName) {
+            alert("Pakilagay ang Owner Name gaya ng nasa ID, Abe.");
             return;
         }
         if (!tosAccepted) {
@@ -37,10 +44,12 @@ const VendorVerificationForm = ({ onComplete, businessName }) => {
             const verificationData = {
                 id: `verify-${Date.now()}`,
                 businessName: businessName,
+                ownerName: ownerName,
                 files: {
                     dti: files.dti.name,
                     permit: files.permit.name,
-                    id: files.id.name
+                    id: files.id.name,
+                    selfie: files.selfie.name
                 },
                 paymentInfo,
                 status: 'pending_verification',
@@ -88,10 +97,27 @@ const VendorVerificationForm = ({ onComplete, businessName }) => {
 
             <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Documents Section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <FileUploadZone label="DTI Certificate" type="dti" file={files.dti} />
                     <FileUploadZone label="Business Permit" type="permit" file={files.permit} />
                     <FileUploadZone label="Valid Gov ID" type="id" file={files.id} />
+                    <FileUploadZone label="Selfie w/ ID" type="selfie" file={files.selfie} />
+                </div>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
+                    🚨 Selfie is required for Escrow Security and Anti-Fraud verification.
+                </p>
+
+                {/* Owner Info Section */}
+                <div className="bg-indigo-50/30 p-8 rounded-[2.5rem] border border-indigo-50">
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 ml-1">Full Name of Owner (As shown on ID)</label>
+                    <input
+                        type="text"
+                        required
+                        value={ownerName}
+                        onChange={(e) => setOwnerName(e.target.value)}
+                        placeholder="Juan Dela Cruz"
+                        className="w-full px-6 py-4 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white bg-white outline-none font-bold transition-all text-sm shadow-sm"
+                    />
                 </div>
 
                 {/* Payment Info Section */}
@@ -128,6 +154,17 @@ const VendorVerificationForm = ({ onComplete, businessName }) => {
                                 value={paymentInfo.accountNumber}
                                 onChange={(e) => setPaymentInfo({...paymentInfo, accountNumber: e.target.value})}
                                 placeholder="09XX XXX XXXX"
+                                className="w-full px-6 py-4 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white bg-white outline-none font-bold transition-all text-sm shadow-sm"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Account Name (Dapat kapareho ng nasa ID)</label>
+                            <input
+                                type="text"
+                                required
+                                value={paymentInfo.accountName}
+                                onChange={(e) => setPaymentInfo({...paymentInfo, accountName: e.target.value})}
+                                placeholder="Juan Dela Cruz"
                                 className="w-full px-6 py-4 rounded-2xl border-2 border-transparent focus:border-indigo-500 focus:bg-white bg-white outline-none font-bold transition-all text-sm shadow-sm"
                             />
                         </div>
