@@ -50,6 +50,18 @@ export default function App() {
     const [currentView, setCurrentView] = useState('landing');
     const [selectedVendorId, setSelectedVendorId] = useState(null);
     const [notification, setNotification] = useState(null);
+    const [payoutRequests, setPayoutRequests] = useState([
+        {
+            id: 'payout-001',
+            vendorId: 'usr-002',
+            vendorName: 'Reggie Photography',
+            amount: 5000,
+            bankName: 'GCash',
+            accountNumber: '09123456789',
+            status: 'pending_withdrawal',
+            date: 'Dec 26, 2025'
+        }
+    ]);
 
     // --- NOTIFICATION SYSTEM ---
     const showNotification = (message, type = 'info') => {
@@ -66,11 +78,11 @@ export default function App() {
     // --- 1. THE SHARED DATABASE (Mock Data) ---
     // Dagdagan natin ng Users Database para sa Security System
     const [users, setUsers] = useState([
-        { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false },
-        { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false },
-        { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false },
-        { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false },
-        { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true },
+        { id: 'usr-001', name: 'Jennie Rose', email: 'jennie@example.com', role: 'client', strikes: 0, isBanned: false, balance: 0 },
+        { id: 'usr-002', name: 'Reggie Photography', email: 'reggie@vendor.com', role: 'vendor', strikes: 0, isBanned: false, balance: 150000 },
+        { id: 'usr-003', name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'client', strikes: 1, isBanned: false, balance: 0 },
+        { id: 'usr-004', name: 'Mabalacat Bridal Cars', email: 'boy@vendor.com', role: 'vendor', strikes: 2, isBanned: false, balance: 75000 },
+        { id: 'usr-005', name: 'Scammer Abe', email: 'scam@example.com', role: 'client', strikes: 3, isBanned: true, balance: 0 },
     ]);
 
     // Ito ang "Single Source of Truth". Konektado dito si Client at Vendor.
@@ -286,7 +298,8 @@ export default function App() {
                 id: 'admin-001',
                 name: 'System Admin',
                 email: email,
-                role: 'ADMIN'
+                role: 'ADMIN',
+                balance: 0
             };
             setIsAdminVerified(true);
         } else if (email === "reggie@vendor.com" && password === "VendorPass123") {
@@ -294,7 +307,8 @@ export default function App() {
                 id: 'usr-002',
                 name: 'Reggie Photography',
                 email: email,
-                role: 'VENDOR'
+                role: 'VENDOR',
+                balance: 150000
             };
         } else {
             // For other users in the mock database (Demo purposes)
@@ -310,7 +324,8 @@ export default function App() {
                     id: Date.now(),
                     name: name || "New Client",
                     email: email,
-                    role: 'CLIENT'
+                    role: 'CLIENT',
+                    balance: 0
                 };
             }
         }
@@ -336,6 +351,33 @@ export default function App() {
             }
         } else {
             alert("Maling credentials, Abe! Subukan mo ulit.");
+        }
+    };
+
+    const executePayoutAction = (requestId, action, data) => {
+        if (action === 'APPROVE') {
+            setPayoutRequests(prev => prev.map(req => 
+                req.id === requestId ? { ...req, status: 'withdrawal_completed' } : req
+            ));
+            
+            // Bawasan ang balance ng Vendor sa global state
+            setUsers(prev => prev.map(u => 
+                u.id === data.vendorId ? { ...u, balance: u.balance - data.amount } : u
+            ));
+
+            // I-update din ang current user kung siya ang apektado
+            if (user && user.id === data.vendorId) {
+                const updatedUser = { ...user, balance: user.balance - data.amount };
+                setUser(updatedUser);
+                localStorage.setItem('photo_user', JSON.stringify(updatedUser));
+            }
+
+            showNotification(`Payout of ₱${data.amount.toLocaleString()} approved for ${data.vendorName}! Ching!`, "success");
+        } else if (action === 'DECLINE') {
+            setPayoutRequests(prev => prev.map(req => 
+                req.id === requestId ? { ...req, status: 'declined' } : req
+            ));
+            showNotification(`Payout declined for ${data.vendorName}. Funds remain in balance.`, "error");
         }
     };
 
@@ -406,6 +448,8 @@ export default function App() {
                         bookings={bookings}
                         onUpdateStatus={updateBookingStatus}
                         showNotification={showNotification}
+                        payoutRequests={payoutRequests}
+                        onAddPayoutRequest={(req) => setPayoutRequests(prev => [req, ...prev])}
                     />
                 </>
             );
@@ -435,6 +479,10 @@ export default function App() {
                                 bookings={bookings} 
                                 onUpdateStatus={updateBookingStatus}
                                 isVerified={isAdminVerified}
+                                payoutRequests={payoutRequests}
+                                setPayoutRequests={setPayoutRequests}
+                                showNotification={showNotification}
+                                onPayoutAction={executePayoutAction}
                             />
                         </div>
                     </>
@@ -533,6 +581,10 @@ export default function App() {
                                     bookings={bookings}
                                     onUpdateStatus={updateBookingStatus}
                                     isVerified={isAdminVerified}
+                                    payoutRequests={payoutRequests}
+                                    setPayoutRequests={setPayoutRequests}
+                                    showNotification={showNotification}
+                                    onPayoutAction={executePayoutAction}
                                 />
                              ) : (
                                 <div className="p-20 text-center">

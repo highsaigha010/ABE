@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
-const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification }) => {
+const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification, payoutRequests, onAddPayoutRequest }) => {
 
   const currentJob = bookings[0];
 
   // STATE: Pera at Withdrawal Logic
-  const [balance, setBalance] = useState(150000);
+  const balance = user?.balance || 0;
   const [showWithdrawModal, setShowWithdrawModal] = useState(false); // Para sa Popup
   const [selectedMethod, setSelectedMethod] = useState('gcash');   // Default selection
   const [isProcessing, setIsProcessing] = useState(false);         // Loading state
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [appealText, setAppealText] = useState('');
+
+  // Fields for Withdrawal Form
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
 
   // --- NEW GPS LOGIC START ---
   const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -54,10 +58,8 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
       if (distance <= 7000) {
         try {
           const response = await onUpdateStatus(currentJob.id, 'RELEASE_20');
-          if (response.success) {
-            // Toast is shown in App.jsx via onUpdateStatus -> callSmartEscrowAPI
-            setBalance(prev => prev + (currentJob.price * 0.20));
-          }
+          // Note: Balance update is now handled by the mock API simulator or global state if needed.
+          // In this mock, we let the notification show the release.
         } catch (error) {
           showNotification("❌ Error updating escrow status, Abe. Subukan mo ulit.", "error");
         }
@@ -91,22 +93,51 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
 
   // STEP 2: Process the Transfer
   const handleConfirmTransfer = () => {
-    const amount = 50000; // Mock amount
+    const amount = parseFloat(withdrawAmount);
 
-    if (balance < amount) return;
+    if (isNaN(amount) || amount <= 0) {
+      showNotification("Abe, maglagay ka ng tamang halaga.", "error");
+      return;
+    }
+
+    if (amount > balance) {
+      showNotification("Abe, hindi sapat ang iyong balance.", "error");
+      return;
+    }
+
+    if (!accountNumber) {
+      showNotification("Paki-lagay ang iyong Account Number.", "error");
+      return;
+    }
 
     setIsProcessing(true); // Start spinner
 
-    // Simulate Bank Delay (2.5 seconds)
+    // Simulate Bank Delay (2 seconds)
     setTimeout(() => {
-      setBalance(prev => prev - amount);
+      const method = payoutMethods.find(m => m.id === selectedMethod);
+      
+      const newRequest = {
+          id: `payout-${Date.now()}`,
+          vendorId: user.id,
+          vendorName: user.name,
+          amount: amount,
+          bankName: method.name,
+          accountNumber: accountNumber,
+          status: 'pending_withdrawal',
+          date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+      };
+
+      onAddPayoutRequest(newRequest);
       setIsProcessing(false);
       setShowWithdrawModal(false); // Close Modal
+      
+      // Reset fields
+      setWithdrawAmount('');
+      setAccountNumber('');
 
       // Show Success Toast with Details
-      const method = payoutMethods.find(m => m.id === selectedMethod);
-      showNotification(`₱${amount.toLocaleString()} Transferred to ${method.name}! Reference: TR-${Math.floor(Math.random()*100000)}`, "success");
-    }, 2500);
+      showNotification(`Withdrawal Request Sent! Please wait for Admin approval.`, "success");
+    }, 2000);
   };
 
   const handleMarkComplete = () => {
@@ -395,13 +426,28 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
 
                 {/* Modal Body */}
                 <div className="p-10">
-                  <div className="mb-8 p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 flex justify-between items-center">
-                    <span className="text-xs font-black text-indigo-900 uppercase tracking-widest">Amount to Transfer</span>
-                    <span className="text-2xl font-black text-indigo-600 tracking-tighter italic">₱50,000.00</span>
+                  <div className="mb-8 p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 space-y-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">Available Balance</span>
+                        <span className="text-xl font-black text-indigo-600 tracking-tighter italic">₱{balance.toLocaleString()}</span>
+                    </div>
+                    <div className="pt-4 border-t border-indigo-100 flex flex-col gap-2">
+                        <label className="text-[10px] font-black text-indigo-900 uppercase tracking-widest ml-1">Amount to Withdraw</label>
+                        <div className="relative">
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">₱</span>
+                            <input 
+                                type="number" 
+                                placeholder="0.00"
+                                value={withdrawAmount}
+                                onChange={(e) => setWithdrawAmount(e.target.value)}
+                                className="w-full bg-white border-2 border-indigo-100 rounded-2xl py-4 pl-12 pr-6 text-xl font-black text-gray-900 focus:outline-none focus:border-indigo-600 transition-all"
+                            />
+                        </div>
+                    </div>
                   </div>
 
                   {/* Bank Selection Grid */}
-                  <div className="grid grid-cols-2 gap-4 mb-10">
+                  <div className="grid grid-cols-2 gap-4 mb-8">
                     {payoutMethods.map((method) => (
                         <div
                             key={method.id}
@@ -422,14 +468,19 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
                     ))}
                   </div>
 
-                  {/* Dummy Account Input */}
+                  {/* Account Input */}
                   <div className="mb-10">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Receiving Account Details</label>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Account Number / Mobile Number</label>
                     <input
                         type="text"
-                        placeholder="Mobile # or Account Number"
-                        className="w-full px-8 py-5 bg-gray-50 border-2 border-gray-50 rounded-2xl font-bold text-sm focus:outline-none focus:border-indigo-500 transition-all placeholder-gray-300"
+                        placeholder="e.g. 0917 XXX XXXX or 1234 5678 XXXX"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-2 border-gray-50 focus:border-indigo-500 focus:bg-white outline-none font-bold transition-all text-sm placeholder-gray-300"
                     />
+                    <p className="mt-4 text-[9px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                      🔒 Secure Payout via Smart Escrow™ Payout Engine
+                    </p>
                   </div>
 
                   {/* Action Button */}
@@ -443,13 +494,18 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
                   >
                     {isProcessing ? (
                         <>
-                            <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Transmitting Funds...
+                          <svg className="animate-spin h-5 w-5 text-indigo-500" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Processing...</span>
                         </>
-                    ) : 'Authorize Payout'}
+                    ) : (
+                        <>
+                          <span>Send Request</span>
+                          <span className="text-xl">🚀</span>
+                        </>
+                    )}
                   </button>
                 </div>
               </div>
