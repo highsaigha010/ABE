@@ -14,7 +14,7 @@ import LegalPage from "./components/LegalPage";
 import NotificationToast from "./components/NotificationToast";
 import ChatWindow from "./components/ChatWindow";
 import {Analytics} from '@vercel/analytics/react';
-import { saveToAbeStore, loadFromAbeStore } from './utils/AbeStore';
+import { saveToAbeStore, loadFromAbeStore } from './utils/AbeStore.js';
 
 export default function App() {
     // --- 1. SECURITY & ACCESS STATES ---
