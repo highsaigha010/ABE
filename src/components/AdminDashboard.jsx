@@ -9,12 +9,18 @@ import {
 
 const PAMPANGA_GEO_URL = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/philippines/pampanga.json";
 
-const AdminDashboard = ({ users, bookings, onUpdateStatus }) => {
+const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified }) => {
     const [activeTab, setActiveTab] = useState('vendors'); // 'vendors', 'bookings', or 'analytics'
     const [confirmModal, setConfirmModal] = useState({ show: false, targetId: null, action: null, label: '' });
     const [expandedBookingId, setExpandedBookingId] = useState(null);
     const [tooltipContent, setTooltipContent] = useState(null);
     const [hoveredBookingId, setHoveredBookingId] = useState(null);
+
+    // Helper to mask sensitive data
+    const maskData = (data, prefix = '') => {
+        if (isVerified) return `${prefix}${data}`;
+        return `${prefix}₱,*** (Verify to View)`;
+    };
 
     // --- ANALYTICS CALCULATIONS ---
     const totalGMV = bookings.reduce((sum, b) => sum + b.price, 0);
@@ -104,6 +110,11 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus }) => {
                     <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full relative shadow-2xl border border-indigo-50 text-center">
                         <div className="text-4xl mb-4">⚖️</div>
                         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic mb-2">Justice System</h3>
+                        {!isVerified && (
+                            <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest mb-4">
+                                ⚠️ Abe! Verify Admin Session to take actions.
+                            </div>
+                        )}
                         <p className="text-gray-600 text-sm mb-8 font-medium">
                             Abe, sigurado ka na ba sa desisyon mo? Final na ito at hindi na mababawi.
                             <br/>
@@ -112,7 +123,8 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus }) => {
                         <div className="flex flex-col gap-3">
                             <button 
                                 onClick={executeDecision}
-                                className="w-full bg-gray-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-100"
+                                disabled={!isVerified}
+                                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl ${!isVerified ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gray-900 text-white hover:bg-indigo-600 shadow-indigo-100'}`}
                             >
                                 Confirm Decision
                             </button>
@@ -570,8 +582,8 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus }) => {
                                                             {b.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right font-black text-sm text-gray-900">₱{b.price.toLocaleString()}</td>
-                                                    <td className="px-6 py-4 text-right font-black text-sm text-indigo-600">₱{(b.price * 0.02).toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-right font-black text-sm text-gray-900">{maskData(b.price.toLocaleString(), '₱')}</td>
+                                                    <td className="px-6 py-4 text-right font-black text-sm text-indigo-600">{maskData((b.price * 0.02).toLocaleString(), '₱')}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

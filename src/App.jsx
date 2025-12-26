@@ -15,16 +15,32 @@ import NotificationToast from "./components/NotificationToast";
 import {Analytics} from '@vercel/analytics/react';
 
 export default function App() {
-    // --- 1. SECURITY & ACCESS STATES (Dapat nandito 'to) ---
+    // --- 1. SECURITY & ACCESS STATES ---
     const [hasAccess, setHasAccess] = useState(false);
     const [accessCode, setAccessCode] = useState('');
     const CORRECT_CODE = "ABE2025";
+    
+    // Admin Credentials for RBAC
+    const adminCredentials = {
+        email: "admin@abe.events",
+        password: "ADMIN_PASSWORD_2025" // In a real app, this should be handled via backend
+    };
+    const [isAdminVerified, setIsAdminVerified] = useState(false);
 
-    // 2. I-check kung naka-login na sa Access Gate dati
+    // 2. I-check kung naka-login na sa Access Gate o User session dati
     useEffect(() => {
         const savedAccess = localStorage.getItem('abe_beta_access');
         if (savedAccess === 'true') {
             setHasAccess(true);
+        }
+
+        const storedUser = localStorage.getItem('photo_user');
+        if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            if (parsedUser.role === 'ADMIN') {
+                setIsAdminVerified(true);
+            }
         }
     }, []);
 
@@ -240,10 +256,7 @@ export default function App() {
     };
 
     // --- AUTH LOGIC ---
-    useEffect(() => {
-        const storedUser = localStorage.getItem('photo_user');
-        if (storedUser) setUser(JSON.parse(storedUser));
-    }, []);
+    // Persistent Login moved to useEffect at top
 
     const handleAccessSubmit = (e) => {
         e.preventDefault();
@@ -257,6 +270,7 @@ export default function App() {
 
     const handleLogout = () => {
         setUser(null);
+        setIsAdminVerified(false);
         localStorage.removeItem('photo_user');
         setCurrentView('landing');
     };
@@ -270,7 +284,9 @@ export default function App() {
             return;
         }
 
-        const role = userData.email.toLowerCase().includes('vendor') ? 'vendor' : 'client';
+        const role = userData.email.toLowerCase().includes('admin') ? 'ADMIN' : 
+                     (userData.email.toLowerCase().includes('vendor') ? 'VENDOR' : 'CLIENT');
+        
         const userWithRole = {
             ...userData, 
             role,
@@ -279,7 +295,13 @@ export default function App() {
         };
         setUser(userWithRole);
         localStorage.setItem('photo_user', JSON.stringify(userWithRole));
-        setCurrentView('dashboard');
+        
+        if (role === 'ADMIN') {
+            setIsAdminVerified(true);
+            setCurrentView('admin-dashboard');
+        } else {
+            setCurrentView('dashboard');
+        }
     };
 
     // --- ACCESS GATE UI ---
@@ -331,11 +353,14 @@ export default function App() {
     };
 
     if (user && (user.id || user.email)) {
+        // RBAC: Protected Routes Logic
+        if (currentView === 'admin-dashboard' && user.role !== 'ADMIN') {
+            alert('Abe, Restricted Area ito!');
+            setCurrentView('dashboard');
+        }
 
         // VENDOR VIEW (Pinagtibay na Logic)
-        if (user.role === 'vendor') {
-            // Dito natin sinisiguro na kahit ano pa ang 'currentView',
-            // basta Vendor ang naka-login, lilitaw ang VendorDashboard.
+        if (user.role === 'VENDOR') {
             return (
                 <>
                     <Analytics/>
@@ -349,6 +374,37 @@ export default function App() {
                     />
                 </>
             );
+        }
+
+        // ADMIN VIEW
+        if (user.role === 'ADMIN' || currentView === 'admin-dashboard') {
+             // Re-verify if trying to access admin dashboard
+             if (user.role !== 'ADMIN') {
+                 alert('Abe, Restricted Area ito!');
+                 setCurrentView('dashboard');
+             } else {
+                return (
+                    <>
+                        <Analytics/>
+                        {renderNotification()}
+                        <div className="min-h-screen bg-white flex flex-col items-center font-sans">
+                            <nav className="w-full bg-white border-b border-gray-100 sticky top-0 z-50">
+                                <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                                    <button onClick={handleLogout} className="text-xs font-black uppercase tracking-widest text-red-500">Log Out</button>
+                                    <span className="text-xl font-black text-gray-900 uppercase">ABE <span className="text-indigo-600 italic">Admin</span></span>
+                                    <div className="w-16"></div>
+                                </div>
+                            </nav>
+                            <AdminDashboard 
+                                users={users} 
+                                bookings={bookings} 
+                                onUpdateStatus={updateBookingStatus}
+                                isVerified={isAdminVerified}
+                            />
+                        </div>
+                    </>
+                );
+             }
         }
 
         // CLIENT VIEWS (Keep this as is)
@@ -436,11 +492,20 @@ export default function App() {
 
                         {/* ETO YUNG DINAGDAG NATING ADMIN VIEW */}
                         {currentView === 'admin-dashboard' && (
-                            <AdminDashboard
-                                users={users}
-                                bookings={bookings}
-                                onUpdateStatus={updateBookingStatus}
-                            />
+                             user && user.role === 'ADMIN' ? (
+                                <AdminDashboard
+                                    users={users}
+                                    bookings={bookings}
+                                    onUpdateStatus={updateBookingStatus}
+                                    isVerified={isAdminVerified}
+                                />
+                             ) : (
+                                <div className="p-20 text-center">
+                                    <h2 className="text-2xl font-black text-red-600 uppercase tracking-tighter">Abe, Restricted Area ito!</h2>
+                                    <p className="text-gray-500 mt-4">Wala kang sapat na pahintulot para pasukin ang Admin Dashboard.</p>
+                                    <button onClick={() => setCurrentView('landing')} className="mt-8 bg-gray-900 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest">Balik sa Home</button>
+                                </div>
+                             )
                         )}
 
                         {currentView === 'vendor-search' && (
@@ -496,8 +561,22 @@ export default function App() {
                 onSupport={() => setCurrentView('support')}
                 // ETO YUNG DAGDAG BARKADA:
                 onAdminAccess={() => {
-                    const pass = prompt("Enter Admin Code:");
-                    if(pass === "ABE2025") setCurrentView('admin-dashboard');
+                    const email = prompt("Enter Admin Email:");
+                    const pass = prompt("Enter Admin Password:");
+                    if(email === adminCredentials.email && pass === adminCredentials.password) {
+                        const adminUser = {
+                            id: 'admin-001',
+                            name: 'Super Admin',
+                            email: email,
+                            role: 'ADMIN'
+                        };
+                        setUser(adminUser);
+                        setIsAdminVerified(true);
+                        localStorage.setItem('photo_user', JSON.stringify(adminUser));
+                        setCurrentView('admin-dashboard');
+                    } else {
+                        alert("Maling credentials, Abe! Restricted Area ito.");
+                    }
                 }}
             />
         </>
