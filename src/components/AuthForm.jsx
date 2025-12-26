@@ -18,28 +18,15 @@ const AuthForm = ({ initialMode = 'login', onAuthSuccess }) => {
         // --- SAFETY TIMEOUT ---
         setTimeout(() => {
 
-            // STEP 2: Gumawa ng User Data
-            const fakeUser = {
-                id: Date.now(),
-                email: email || "demo@user.com", // Fallback kung walang tinype
-                name: name || "Demo User",
-                token: 'demo-token-123',
-                role: (email || "").toLowerCase().includes('vendor') ? 'vendor' : 'client'
-            };
-
-            console.log("User Created:", fakeUser);
-
-            // STEP 3: STOP THE SPINNER FIRST (Para hindi ma-stuck)
-            setLoading(false);
-
-            // STEP 4: Tawagin ang App.jsx para lumipat ng page
+            // STEP 2: I-verify ang credentials sa App.jsx
             if (onAuthSuccess) {
-                onAuthSuccess(fakeUser);
+                onAuthSuccess({ email, password, name });
             } else {
                 alert("Error: onAuthSuccess function is missing!");
             }
 
-        }, 1000); // 1 second lang dapat
+            setLoading(false);
+        }, 1000);
     };
 
     return (

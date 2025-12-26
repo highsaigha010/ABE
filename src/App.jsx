@@ -275,32 +275,67 @@ export default function App() {
         setCurrentView('landing');
     };
 
-    const handleAuthSuccess = (userData) => {
-        // I-check sa ating "database" kung banned ang user na ito
-        const existingUser = users.find(u => u.email === userData.email);
-        
-        if (existingUser && existingUser.isBanned) {
+    const handleLogin = (credentials) => {
+        const { email, password, name } = credentials;
+
+        // 1. HARDCODED CREDENTIALS VERIFICATION
+        let authenticatedUser = null;
+
+        if (email === "admin@abevents.ph" && password === "ABE_Master2025!") {
+            authenticatedUser = {
+                id: 'admin-001',
+                name: 'System Admin',
+                email: email,
+                role: 'ADMIN'
+            };
+            setIsAdminVerified(true);
+        } else if (email === "reggie@vendor.com" && password === "VendorPass123") {
+            authenticatedUser = {
+                id: 'usr-002',
+                name: 'Reggie Photography',
+                email: email,
+                role: 'VENDOR'
+            };
+        } else {
+            // For other users in the mock database (Demo purposes)
+            const foundUser = users.find(u => u.email === email);
+            if (foundUser) {
+                authenticatedUser = {
+                    ...foundUser,
+                    role: foundUser.role.toUpperCase()
+                };
+            } else {
+                // Mock Register/Login for new clients
+                authenticatedUser = {
+                    id: Date.now(),
+                    name: name || "New Client",
+                    email: email,
+                    role: 'CLIENT'
+                };
+            }
+        }
+
+        // 2. CHECK IF BANNED
+        const isBanned = users.find(u => u.email === email)?.isBanned;
+        if (isBanned) {
             alert("Abe, ang account mo ay suspendido dahil sa paglabag sa aming Terms of Service.");
             return;
         }
 
-        const role = userData.email.toLowerCase().includes('admin') ? 'ADMIN' : 
-                     (userData.email.toLowerCase().includes('vendor') ? 'VENDOR' : 'CLIENT');
-        
-        const userWithRole = {
-            ...userData, 
-            role,
-            strikes: existingUser ? existingUser.strikes : 0,
-            isBanned: existingUser ? existingUser.isBanned : false
-        };
-        setUser(userWithRole);
-        localStorage.setItem('photo_user', JSON.stringify(userWithRole));
-        
-        if (role === 'ADMIN') {
-            setIsAdminVerified(true);
-            setCurrentView('admin-dashboard');
+        // 3. PERSIST & REDIRECT
+        if (authenticatedUser) {
+            setUser(authenticatedUser);
+            localStorage.setItem('photo_user', JSON.stringify(authenticatedUser));
+
+            if (authenticatedUser.role === 'ADMIN') {
+                setCurrentView('admin-dashboard');
+            } else if (authenticatedUser.role === 'VENDOR') {
+                setCurrentView('dashboard'); // Dashboard will handle VENDOR view
+            } else {
+                setCurrentView('dashboard');
+            }
         } else {
-            setCurrentView('dashboard');
+            alert("Maling credentials, Abe! Subukan mo ulit.");
         }
     };
 
@@ -539,7 +574,7 @@ export default function App() {
             <>
                 <Analytics/>
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                    <AuthForm initialMode={currentView} onAuthSuccess={handleAuthSuccess}/>
+                    <AuthForm initialMode={currentView} onAuthSuccess={handleLogin}/>
                 </div>
             </>
         );
@@ -563,10 +598,10 @@ export default function App() {
                 onAdminAccess={() => {
                     const email = prompt("Enter Admin Email:");
                     const pass = prompt("Enter Admin Password:");
-                    if(email === adminCredentials.email && pass === adminCredentials.password) {
+                    if(email === "admin@abevents.ph" && pass === "ABE_Master2025!") {
                         const adminUser = {
                             id: 'admin-001',
-                            name: 'Super Admin',
+                            name: 'System Admin',
                             email: email,
                             role: 'ADMIN'
                         };
