@@ -9,8 +9,8 @@ import {
 
 const PAMPANGA_GEO_URL = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/philippines/pampanga.json";
 
-const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, showNotification, onPayoutAction }) => {
-    const [activeTab, setActiveTab] = useState('vendors'); // 'vendors', 'bookings', 'analytics', or 'payouts'
+const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction }) => {
+    const [activeTab, setActiveTab] = useState('verification'); // 'verification', 'vendors', 'bookings', 'analytics', or 'payouts'
     const [confirmModal, setConfirmModal] = useState({ show: false, targetId: null, action: null, label: '', data: null });
     const [expandedBookingId, setExpandedBookingId] = useState(null);
     const [tooltipContent, setTooltipContent] = useState(null);
@@ -170,10 +170,16 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                     <div className="p-8 border-b border-gray-50 flex justify-between items-center">
                         <div className="flex gap-8">
                             <button 
+                                onClick={() => setActiveTab('verification')}
+                                className={`text-lg font-black uppercase tracking-tighter italic transition-all ${activeTab === 'verification' ? 'text-indigo-600 border-b-4 border-indigo-600' : 'text-gray-300 hover:text-gray-400'}`}
+                            >
+                                Verification Queue
+                            </button>
+                            <button 
                                 onClick={() => setActiveTab('vendors')}
                                 className={`text-lg font-black uppercase tracking-tighter italic transition-all ${activeTab === 'vendors' ? 'text-indigo-600 border-b-4 border-indigo-600' : 'text-gray-300 hover:text-gray-400'}`}
                             >
-                                Verification Queue
+                                Active Suppliers
                             </button>
                             <button 
                                 onClick={() => setActiveTab('bookings')}
@@ -198,7 +204,86 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                     </div>
 
                     <div className="overflow-x-auto">
-                        {activeTab === 'vendors' ? (
+                        {activeTab === 'verification' ? (
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                                        <th className="px-8 py-5">Business Name</th>
+                                        <th className="px-8 py-5">Documents</th>
+                                        <th className="px-8 py-5">Payment Info</th>
+                                        <th className="px-8 py-5">Status</th>
+                                        <th className="px-8 py-5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {verificationRequests.map((req) => (
+                                        <tr key={req.id} className="hover:bg-indigo-50/30 transition-colors">
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-gray-900 uppercase tracking-tight">{req.businessName}</span>
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{req.date}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">📄 DTI: {req.files.dti}</span>
+                                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">📄 Permit: {req.files.permit}</span>
+                                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">🪪 ID: {req.files.id}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-gray-900">{req.paymentInfo.bankName}</span>
+                                                    <span className="text-[10px] text-gray-400 font-bold">{isVerified ? req.paymentInfo.accountNumber : '**** **** ****'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                                    req.status === 'pending_verification' ? 'bg-orange-100 text-orange-600' : 
+                                                    req.status === 'verified' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                }`}>
+                                                    {req.status.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                {req.status === 'pending_verification' ? (
+                                                    <div className="flex justify-end gap-2">
+                                                        <button 
+                                                            onClick={() => {
+                                                                setVerificationRequests(prev => prev.map(r => r.id === req.id ? {...r, status: 'verified'} : r));
+                                                                showNotification(`Abe, verified na ang ${req.businessName}!`, "success");
+                                                            }}
+                                                            className="bg-green-600 text-white px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-tighter hover:bg-green-700 transition-all"
+                                                        >
+                                                            ✅ Approve
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                setVerificationRequests(prev => prev.map(r => r.id === req.id ? {...r, status: 'rejected'} : r));
+                                                                showNotification(`Rejected application: ${req.businessName}`, "error");
+                                                            }}
+                                                            className="bg-red-600 text-white px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-tighter hover:bg-red-700 transition-all"
+                                                        >
+                                                            ❌ Reject
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-gray-300 uppercase italic">Decision Made</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {verificationRequests.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="px-8 py-20 text-center">
+                                                <span className="text-4xl block mb-4">✨</span>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Queue is clear, Abe! No pending verifications.</p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        ) : activeTab === 'vendors' ? (
                             <table className="w-full text-left">
                                 <thead>
                                 <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">

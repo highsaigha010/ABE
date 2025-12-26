@@ -81,6 +81,31 @@ export default function App() {
         }
     ]);
 
+    const [verificationRequests, setVerificationRequests] = useState([
+        {
+            id: 'verify-001',
+            businessName: 'Reggie Photography',
+            files: {
+                dti: 'dti_reggie_2025.pdf',
+                permit: 'permit_angeles_2025.pdf',
+                id: 'id_reggie_back.jpg'
+            },
+            paymentInfo: {
+                bankName: 'GCash',
+                accountNumber: '09123456789'
+            },
+            status: 'pending_verification',
+            date: 'Dec 26, 2025'
+        }
+    ]);
+
+    // Handle verification request globally
+    useEffect(() => {
+        window.addVerificationRequest = (data) => {
+            setVerificationRequests(prev => [data, ...prev]);
+        };
+    }, []);
+
     // --- NOTIFICATION SYSTEM ---
     const showNotification = (message, type = 'info') => {
         const id = Date.now();
@@ -501,14 +526,16 @@ export default function App() {
                                 isVerified={isAdminVerified}
                                 payoutRequests={payoutRequests}
                                 setPayoutRequests={setPayoutRequests}
+                                verificationRequests={verificationRequests}
+                                setVerificationRequests={setVerificationRequests}
                                 showNotification={showNotification}
                                 onPayoutAction={executePayoutAction}
                             />
-                        </div>
-                    </>
-                );
-             }
-        }
+                    </div>
+                </>
+            );
+         }
+    }
 
         // CLIENT VIEWS (Keep this as is)
         if (currentView === 'vendor-profile') {
@@ -605,6 +632,8 @@ export default function App() {
                                     isVerified={isAdminVerified}
                                     payoutRequests={payoutRequests}
                                     setPayoutRequests={setPayoutRequests}
+                                    verificationRequests={verificationRequests}
+                                    setVerificationRequests={setVerificationRequests}
                                     showNotification={showNotification}
                                     onPayoutAction={executePayoutAction}
                                 />

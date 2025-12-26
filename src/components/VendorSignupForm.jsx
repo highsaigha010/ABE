@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ImageUploader from './ImageUploader';
+import VendorVerificationForm from './VendorVerificationForm';
 
 export default function VendorSignupForm() {
     const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ export default function VendorSignupForm() {
     });
 
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [step, setStep] = useState(1); // Track step: 1 (basic), 2 (verification), 3 (success)
     const [error, setError] = useState('');
 
     // Backend endpoint as specified in requirements
@@ -33,7 +34,7 @@ export default function VendorSignupForm() {
         return null;
     };
 
-    const handleSubmit = async (e) => {
+    const handleStep1Submit = async (e) => {
         e.preventDefault();
         setError('');
         
@@ -45,44 +46,35 @@ export default function VendorSignupForm() {
 
         setLoading(true);
 
-        try {
-            const response = await fetch(`${API_URL}/vendors`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    business_name: formData.businessName,
-                    city: formData.city,
-                    category: formData.category,
-                    description: formData.description,
-                    base_price: formData.basePrice,
-                    cover_image: formData.cover_image
-                }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setSuccess(true);
-            } else {
-                setError(data.message || "Failed to register as a vendor. Please try again.");
-            }
-        } catch (err) {
-            setError("Network error. Please check your connection and try again.");
-        } finally {
+        // Simulate basic registration success before moving to Step 2
+        setTimeout(() => {
             setLoading(false);
-        }
+            setStep(2);
+        }, 1500);
     };
 
-    if (success) {
+    const handleVerificationComplete = (verificationData) => {
+        console.log("Verification Data Submitted:", verificationData);
+        
+        // Dito natin pwedeng i-trigger ang main API submission kasama ang verification data
+        // Pero for now, i-save natin ito sa state/global state via App.jsx mechanism later
+        
+        // Emit event for App.jsx to pick up if needed, or just show success
+        if (window.addVerificationRequest) {
+            window.addVerificationRequest(verificationData);
+        }
+
+        setStep(3);
+    };
+
+    if (step === 3) {
         return (
             <div className="max-w-md mx-auto mt-10 p-8 bg-white rounded-2xl shadow-xl text-center border border-gray-100">
                 <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
                     ✓
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h2>
-                <p className="text-gray-600 mb-8">Your vendor profile has been created. We'll review your details and get back to you soon.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
+                <p className="text-gray-600 mb-8">Abe, nakuha na namin ang iyong mga documents. Paki-antay ang review ng aming Admin Team sa Verification Queue.</p>
                 <button 
                     onClick={() => window.location.reload()} 
                     className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg"
@@ -90,6 +82,15 @@ export default function VendorSignupForm() {
                     Back to Home
                 </button>
             </div>
+        );
+    }
+
+    if (step === 2) {
+        return (
+            <VendorVerificationForm 
+                businessName={formData.businessName} 
+                onComplete={handleVerificationComplete} 
+            />
         );
     }
 
@@ -106,7 +107,7 @@ export default function VendorSignupForm() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleStep1Submit} className="space-y-8">
                 <div>
                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Business Name</label>
                     <input
