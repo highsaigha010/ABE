@@ -5,6 +5,28 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const activeBooking = bookings && bookings.length > 0 ? bookings[0] : null;
 
+    // Helper para sa Countdown
+    const getDaysUntil = (dateStr) => {
+        const eventDate = new Date(dateStr);
+        const today = new Date();
+        const diffTime = eventDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+    };
+
+    // Helper para sa Budget Tracker
+    const getBudgetStats = (booking) => {
+        if (!booking) return { paid: 0, remaining: 0, percent: 0 };
+        const total = booking.price;
+        const isPaidInEscrow = ['paid', 'partially_released', 'completed', 'released'].includes(booking.status);
+        const paid = isPaidInEscrow ? total : 0;
+        const remaining = isPaidInEscrow ? 0 : total;
+        const percent = (paid / total) * 100;
+        return { total, paid, remaining, percent };
+    };
+
+    const budget = getBudgetStats(activeBooking);
+
     // Mock Categories para mukhang buhay ang app
     const categories = [
         { name: "Photographers", icon: "📸", color: "bg-purple-100 text-purple-600" },
@@ -106,6 +128,94 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
 
             {/* --- MAIN CONTENT --- */}
             <div className="max-w-6xl mx-auto px-6 -mt-16 pb-24 relative z-20">
+
+                {/* EVENT TIMELINE & BUDGET TRACKER */}
+                {activeBooking && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+                        {/* Timeline */}
+                        <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-indigo-100/50 border border-gray-50 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-10">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-gray-900 tracking-tighter italic uppercase">Event Timeline</h3>
+                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">Road to {activeBooking.date}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block text-4xl font-black text-gray-900 tracking-tighter">{getDaysUntil(activeBooking.date)}</span>
+                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Days to Go</span>
+                                    </div>
+                                </div>
+
+                                <div className="relative">
+                                    {/* Horizontal Line */}
+                                    <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-100 -z-10"></div>
+                                    
+                                    <div className="flex justify-between">
+                                        {[
+                                            { label: 'Booked', status: ['unpaid', 'paid', 'partially_released', 'completed', 'released'], icon: '📝' },
+                                            { label: 'Escrow Paid', status: ['paid', 'partially_released', 'completed', 'released'], icon: '🔒' },
+                                            { label: 'Event Day', status: ['partially_released', 'completed', 'released'], icon: '🎉' },
+                                            { label: 'Final Release', status: ['released'], icon: '💰' }
+                                        ].map((step, idx) => {
+                                            const isActive = step.status.includes(activeBooking.status);
+                                            return (
+                                                <div key={idx} className="flex flex-col items-center gap-4 text-center">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all shadow-lg ${isActive ? 'bg-indigo-600 text-white scale-110 shadow-indigo-200' : 'bg-white text-gray-300 border-2 border-gray-50'}`}>
+                                                        {isActive ? step.icon : '•'}
+                                                    </div>
+                                                    <span className={`text-[9px] font-black uppercase tracking-tighter max-w-[60px] ${isActive ? 'text-gray-900' : 'text-gray-300'}`}>
+                                                        {step.label}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Budget Tracker */}
+                        <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-indigo-100/50 border border-gray-50 flex flex-col justify-between">
+                            <div>
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter italic uppercase mb-1">Budget Tracker</h3>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">Smart Escrow™ Managed</p>
+                                
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-end">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Paid</span>
+                                            <span className="text-2xl font-black text-gray-900 tracking-tighter italic">₱{budget.paid.toLocaleString()}</span>
+                                        </div>
+                                        <div className="text-right flex flex-col">
+                                            <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Total</span>
+                                            <span className="text-sm font-bold text-gray-400">₱{budget.total.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full h-4 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 transition-all duration-1000 ease-out shadow-inner"
+                                            style={{ width: `${budget.percent}%` }}
+                                        ></div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                        <span className="text-gray-400">{Math.round(budget.percent)}% Complete</span>
+                                        <span className="text-indigo-600">₱{budget.remaining.toLocaleString()} Remaining</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={onViewBooking}
+                                className="w-full mt-10 py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                            >
+                                View Detailed Billing
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Categories Grid */}
                 <div className="mb-16">

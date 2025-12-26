@@ -7,6 +7,9 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [searched, setSearched] = useState(false);
+    const [quoteModal, setQuoteModal] = useState({ show: false, vendor: null });
+    const [quoteData, setQuoteData] = useState({ date: '', details: '' });
+    const [quoteLoading, setQuoteLoading] = useState(false);
 
     // Backend endpoint
     const API_URL = "https://wo8fo93m11.execute-api.us-east-1.amazonaws.com";
@@ -47,8 +50,73 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
         handleSearch();
     }, []);
 
+    const topPicks = vendors.filter(v => v.strikes === 0).slice(0, 3);
+
+    const handleQuoteSubmit = (e) => {
+        e.preventDefault();
+        setQuoteLoading(true);
+        setTimeout(() => {
+            alert(`Abe, sent na ang quote request mo kay ${quoteModal.vendor?.businessName}! Wait ka lang sa reply.`);
+            setQuoteLoading(false);
+            setQuoteModal({ show: false, vendor: null });
+            setQuoteData({ date: '', details: '' });
+        }, 1500);
+    };
+
     return (
-        <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-indigo-100">
+        <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-indigo-100 relative">
+            {/* Quote Modal */}
+            {quoteModal.show && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-indigo-950/40 backdrop-blur-sm" onClick={() => setQuoteModal({ show: false, vendor: null })}></div>
+                    <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 max-w-lg w-full relative shadow-2xl border border-indigo-50">
+                        <div className="mb-8">
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tighter italic uppercase">Request a Quote</h3>
+                            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">Direct to {quoteModal.vendor?.businessName}</p>
+                        </div>
+                        
+                        <form onSubmit={handleQuoteSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Target Event Date</label>
+                                <input 
+                                    type="date" 
+                                    required
+                                    value={quoteData.date}
+                                    onChange={(e) => setQuoteData({...quoteData, date: e.target.value})}
+                                    className="w-full bg-gray-50 border-2 border-gray-50 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-indigo-500 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Event Details & Requests</label>
+                                <textarea 
+                                    placeholder="Abe, sabihin mo dito ang mga details ng event mo (Venue, Hours, Special Requests)..."
+                                    required
+                                    value={quoteData.details}
+                                    onChange={(e) => setQuoteData({...quoteData, details: e.target.value})}
+                                    className="w-full bg-gray-50 border-2 border-gray-50 rounded-[2rem] py-4 px-6 text-sm font-bold focus:outline-none focus:border-indigo-500 transition-all min-h-[120px] resize-none"
+                                ></textarea>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    type="submit"
+                                    disabled={quoteLoading}
+                                    className="flex-1 bg-gray-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50"
+                                >
+                                    {quoteLoading ? 'Sending Request...' : 'Send Quote Request'}
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={() => setQuoteModal({ show: false, vendor: null })}
+                                    className="px-8 bg-gray-50 text-gray-400 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
             {/* 1. HERO BANNER WITH SEARCH BAR */}
             <section className="relative h-[450px] sm:h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
@@ -124,6 +192,58 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
 
             {/* 2. RESULTS GRID */}
             <main className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8">
+                
+                {/* ABE'S TOP PICKS */}
+                {searched && !loading && topPicks.length > 0 && (
+                    <div className="mb-24">
+                        <div className="flex items-center gap-4 mb-10">
+                            <div className="h-px bg-indigo-100 flex-1"></div>
+                            <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-2">Editor's Choice</span>
+                                <h2 className="text-4xl font-black text-gray-900 tracking-tighter italic uppercase">Abe's Top Picks</h2>
+                            </div>
+                            <div className="h-px bg-indigo-100 flex-1"></div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {topPicks.map((vendor, idx) => {
+                                const coverImageUrl = vendor.coverImage && vendor.coverImage.startsWith('http') 
+                                ? vendor.coverImage 
+                                : (vendor.coverImage ? `https://photo-assets-reggie-unique-dev.s3.amazonaws.com/${vendor.coverImage}` : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80');
+
+                                return (
+                                    <div key={idx} className="bg-indigo-600 rounded-[2.5rem] p-1 relative overflow-hidden group shadow-2xl shadow-indigo-200">
+                                        <div className="bg-white rounded-[2.3rem] p-6 h-full flex flex-col">
+                                            <div className="h-48 rounded-[1.8rem] overflow-hidden mb-6 relative">
+                                                <img src={coverImageUrl} className="w-full h-full object-cover" alt={vendor.businessName} />
+                                                <div className="absolute inset-0 bg-indigo-900/20 backdrop-blur-[1px]"></div>
+                                                <div className="absolute top-4 left-4 bg-indigo-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">⭐ 5.0 Rating</div>
+                                            </div>
+                                            <h4 className="text-xl font-black text-gray-900 mb-1">{vendor.businessName}</h4>
+                                            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-6">Verified Excellence</p>
+                                            
+                                            <div className="mt-auto flex gap-2">
+                                                <button 
+                                                    onClick={() => onViewProfile && onViewProfile(vendor.pk?.replace('VENDOR#', ''))}
+                                                    className="flex-1 py-3.5 bg-gray-50 text-gray-900 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-100"
+                                                >
+                                                    View Profile
+                                                </button>
+                                                <button 
+                                                    onClick={() => setQuoteModal({ show: true, vendor })}
+                                                    className="px-4 py-3.5 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+                                                >
+                                                    Quote
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex flex-col md:flex-row justify-between items-center mb-16 gap-6">
                     <div>
                         <h2 className="text-4xl font-black text-gray-900 tracking-tight">Available <span className="text-indigo-600">Suppliers</span></h2>
@@ -225,12 +345,20 @@ export default function VendorSearchPage({ onViewProfile, users = [] }) {
                                             </div>
                                         </div>
                                         
-                                        <button 
-                                            onClick={() => onViewProfile && onViewProfile(vendor.pk?.replace('VENDOR#', ''))}
-                                            className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl group/btn"
-                                        >
-                                            View Professional Profile <span className="inline-block transition-transform group-hover/btn:translate-x-1">&rarr;</span>
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => onViewProfile && onViewProfile(vendor.pk?.replace('VENDOR#', ''))}
+                                                className="flex-1 py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl group/btn"
+                                            >
+                                                View Profile <span className="inline-block transition-transform group-hover/btn:translate-x-1">&rarr;</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setQuoteModal({ show: true, vendor })}
+                                                className="px-6 py-5 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm"
+                                            >
+                                                Quote
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
