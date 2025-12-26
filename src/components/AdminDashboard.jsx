@@ -9,10 +9,11 @@ import {
 
 const PAMPANGA_GEO_URL = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/philippines/pampanga.json";
 
-const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction }) => {
+const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutRequests, setPayoutRequests, verificationRequests, setVerificationRequests, showNotification, onPayoutAction, messages }) => {
     const [activeTab, setActiveTab] = useState('verification'); // 'verification', 'vendors', 'bookings', 'analytics', or 'payouts'
     const [confirmModal, setConfirmModal] = useState({ show: false, targetId: null, action: null, label: '', data: null });
     const [rejectionModal, setRejectionModal] = useState({ show: false, targetId: null, reason: '', feedback: '' });
+    const [chatLogModal, setChatLogModal] = useState({ show: false, bookingId: null });
     const rejectionReasons = [
         'Expired Permit',
         'Name Mismatch (ID vs Bank)',
@@ -232,6 +233,41 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                     Close Preview
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Chat Log Modal */}
+            {chatLogModal.show && (
+                <div className="fixed inset-0 z-[130] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-sm" onClick={() => setChatLogModal({ show: false, bookingId: null })}></div>
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-2xl h-[80vh] flex flex-col relative shadow-2xl border border-gray-100 overflow-hidden">
+                        <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter italic">Chat Logs: {chatLogModal.bookingId}</h3>
+                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">Dispute Mediation Oversight</p>
+                            </div>
+                            <button onClick={() => setChatLogModal({ show: false, bookingId: null })} className="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center font-black">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-8 space-y-4 bg-gray-50">
+                            {messages.filter(m => m.bookingId === chatLogModal.bookingId).map(msg => (
+                                <div key={msg.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{msg.senderId}</span>
+                                        <span className="text-[8px] font-bold text-gray-400 uppercase">{msg.timestamp}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 font-medium">{msg.text}</p>
+                                    {msg.type === 'contract' && (
+                                        <div className="mt-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+                                            📄 Contract Offer: ₱{parseFloat(msg.contractData?.price || 0).toLocaleString()}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {messages.filter(m => m.bookingId === chatLogModal.bookingId).length === 0 && (
+                                <div className="text-center py-20 text-gray-400 italic">No chat history found for this booking.</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -632,6 +668,13 @@ const AdminDashboard = ({ users, bookings, onUpdateStatus, isVerified, payoutReq
                                         <td className="px-8 py-6 text-right">
                                             {booking.status === 'disputed' ? (
                                                 <div className="flex justify-end gap-2">
+                                                    <button 
+                                                        onClick={() => setChatLogModal({ show: true, bookingId: booking.id })}
+                                                        className="bg-white text-gray-400 px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-tighter hover:bg-gray-100 transition-all border border-gray-100"
+                                                        title="View Logs"
+                                                    >
+                                                        💬 Logs
+                                                    </button>
                                                     <button 
                                                         onClick={() => handleActionClick(booking.id, 'RELEASE', 'Final Release')}
                                                         className="bg-green-600 text-white px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-tighter hover:bg-green-700 transition-all"

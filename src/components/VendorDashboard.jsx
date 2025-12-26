@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
-const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification, payoutRequests, onAddPayoutRequest, showInstallButton, onInstallApp }) => {
+const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotification, payoutRequests, onAddPayoutRequest, showInstallButton, onInstallApp, onOpenChat }) => {
 
   const currentJob = bookings[0];
 
@@ -363,6 +363,12 @@ const VendorDashboard = ({ user, onLogout, bookings, onUpdateStatus, showNotific
                         Confirm Delivery
                       </button>
                   )}
+                  <button
+                      onClick={() => onOpenChat(currentJob.id)}
+                      className="bg-indigo-50 text-indigo-600 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 border border-indigo-100 transition-all flex items-center gap-2"
+                  >
+                      <span>💬 Message Client</span>
+                  </button>
                   {currentJob.status === 'released' && (
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Completed</span>

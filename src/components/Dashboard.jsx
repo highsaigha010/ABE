@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { generateInvoice } from '../utils/invoiceGenerator';
 
-const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp }) => {
+const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, showInstallButton, onInstallApp, onOpenChat }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const activeBooking = bookings && bookings.length > 0 ? bookings[0] : null;
 
@@ -207,12 +207,20 @@ const Dashboard = ({ user, bookings, onLogout, onFindSuppliers, onViewBooking, s
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={onViewBooking}
-                                className="w-full mt-10 py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                            >
-                                View Detailed Billing
-                            </button>
+                            <div className="mt-10 flex gap-4">
+                                <button 
+                                    onClick={onViewBooking}
+                                    className="flex-1 py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                >
+                                    View Billing
+                                </button>
+                                <button 
+                                    onClick={() => onOpenChat(activeBooking.id)}
+                                    className="flex-1 py-4 bg-white text-gray-900 border border-gray-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <span>💬 Message Supplier</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

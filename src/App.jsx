@@ -12,6 +12,7 @@ import SupportCenter from "./components/SupportCenter";
 import TermsForESCROW from "./components/TermsForESCROW";
 import LegalPage from "./components/LegalPage";
 import NotificationToast from "./components/NotificationToast";
+import ChatWindow from "./components/ChatWindow";
 import {Analytics} from '@vercel/analytics/react';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
     };
     const [isAdminVerified, setIsAdminVerified] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [activeChatBookingId, setActiveChatBookingId] = useState(null);
 
     // 2. I-check kung naka-login na sa Access Gate o User session dati
     useEffect(() => {
@@ -98,6 +100,46 @@ export default function App() {
             date: 'Dec 26, 2025'
         }
     ]);
+
+    // --- MESSAGING SYSTEM STATE ---
+    const [messages, setMessages] = useState([
+        {
+            id: 'msg-001',
+            bookingId: 'txn-001',
+            senderId: 'usr-002', // Reggie
+            text: "Hello Abe! Ready na ako para sa event mo sa Dec 25. Gusto mo na bang i-send ko ang contract quote?",
+            timestamp: new Date().toLocaleTimeString(),
+            isRead: true,
+            type: 'text'
+        }
+    ]);
+
+    const playPopSound = () => {
+        const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/descent/bomb.mp3'); // Mock pop sound
+        audio.play().catch(e => console.log("Audio play failed:", e));
+    };
+
+    const sendMessage = (bookingId, senderId, text, type = 'text', contractData = null) => {
+        const newMessage = {
+            id: `msg-${Date.now()}`,
+            bookingId,
+            senderId,
+            text,
+            type,
+            contractData,
+            timestamp: new Date().toLocaleTimeString(),
+            isRead: false
+        };
+        setMessages(prev => [...prev, newMessage]);
+        if (senderId !== user?.id) {
+            playPopSound();
+        }
+    };
+
+    const handleAcceptContract = (bookingId, price) => {
+        updateBookingStatus(bookingId, 'PAY');
+        showNotification(`Contract Accepted! ₱${price.toLocaleString()} secured in Smart Escrow. Ching!`, "success");
+    };
 
     // Handle verification request globally
     useEffect(() => {
@@ -472,6 +514,23 @@ export default function App() {
         );
     };
 
+    const renderChat = () => {
+        if (!activeChatBookingId || !user) return null;
+        const booking = bookings.find(b => b.id === activeChatBookingId);
+        if (!booking) return null;
+
+        return (
+            <ChatWindow 
+                booking={booking}
+                currentUser={user}
+                messages={messages}
+                onSendMessage={sendMessage}
+                onAcceptContract={handleAcceptContract}
+                onClose={() => setActiveChatBookingId(null)}
+            />
+        );
+    };
+
     if (user && (user.id || user.email)) {
         // RBAC: Protected Routes Logic
         if (currentView === 'admin-dashboard' && user.role !== 'ADMIN') {
@@ -485,6 +544,7 @@ export default function App() {
                 <>
                     <Analytics/>
                     {renderNotification()}
+                    {renderChat()}
                     <VendorDashboard
                         user={user}
                         onLogout={handleLogout}
@@ -495,6 +555,7 @@ export default function App() {
                         onAddPayoutRequest={(req) => setPayoutRequests(prev => [req, ...prev])}
                         showInstallButton={!!deferredPrompt}
                         onInstallApp={handleInstallApp}
+                        onOpenChat={(id) => setActiveChatBookingId(id)}
                     />
                 </>
             );
@@ -530,6 +591,7 @@ export default function App() {
                                 setVerificationRequests={setVerificationRequests}
                                 showNotification={showNotification}
                                 onPayoutAction={executePayoutAction}
+                                messages={messages}
                             />
                     </div>
                 </>
@@ -586,6 +648,7 @@ export default function App() {
                     onViewBooking={() => setCurrentView('vendor-profile')}
                     showInstallButton={!!deferredPrompt}
                     onInstallApp={handleInstallApp}
+                    onOpenChat={(id) => setActiveChatBookingId(id)}
                 />
             </>
         );
@@ -636,6 +699,7 @@ export default function App() {
                                     setVerificationRequests={setVerificationRequests}
                                     showNotification={showNotification}
                                     onPayoutAction={executePayoutAction}
+                                    messages={messages}
                                 />
                              ) : (
                                 <div className="p-20 text-center">
